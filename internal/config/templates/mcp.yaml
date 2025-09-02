@@ -1,0 +1,20 @@
+# MCP Server Configuration
+# Model Context Protocol server definitions
+
+servers:
+  filesystem:
+    command: npx
+    args:
+      - "@modelcontextprotocol/server-filesystem"
+      - "/path/to/allowed/directory"
+    env:
+      NODE_ENV: production
+
+  git:
+    command: npx
+    args:
+      - "@modelcontextprotocol/server-git"
+      - "--repository"
+      - "/path/to/git/repository"
+
+  # Add more MCP servers as needed

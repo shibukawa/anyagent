@@ -1,0 +1,241 @@
+package commands
+
+import (
+	"os"
+	"path/filepath"
+	"testing"
+)
+
+func TestRunAddRule(t *testing.T) {
+	tests := []struct {
+		name         string
+		language     string
+		createAGENTS bool
+		expectError  bool
+		expectedFile string
+	}{
+		{
+			name:         "add go rules to initialized project",
+			language:     "go",
+			createAGENTS: true,
+			expectError:  false,
+			expectedFile: "go.instructions.md",
+		},
+		{
+			name:         "add typescript rules",
+			language:     "typescript",
+			createAGENTS: true,
+			expectError:  false,
+			expectedFile: "typescript.instructions.md",
+		},
+		{
+			name:         "add python rules with alias",
+			language:     "py",
+			createAGENTS: true,
+			expectError:  false,
+			expectedFile: "python.instructions.md",
+		},
+		{
+			name:         "add typescript rules with js alias",
+			language:     "js",
+			createAGENTS: true,
+			expectError:  false,
+			expectedFile: "typescript.instructions.md",
+		},
+		{
+			name:         "project not initialized",
+			language:     "go",
+			createAGENTS: false,
+			expectError:  true,
+		},
+		{
+			name:         "unsupported language",
+			language:     "unsupported",
+			createAGENTS: true,
+			expectError:  true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create temporary directory
+			tempDir, err := os.MkdirTemp("", "test_add_rule")
+			if err != nil {
+				t.Fatalf("Failed to create temp dir: %v", err)
+			}
+			defer os.RemoveAll(tempDir)
+
+			// Create AGENTS.md if required
+			if tt.createAGENTS {
+				agentsPath := filepath.Join(tempDir, "AGENTS.md")
+				err = os.WriteFile(agentsPath, []byte("# AI Agents Configuration\ntest content"), 0644)
+				if err != nil {
+					t.Fatalf("Failed to create AGENTS.md: %v", err)
+				}
+			}
+
+			// Test dry run first
+			err = RunAddRule(tt.language, tempDir, true)
+			if tt.expectError {
+				if err == nil {
+					t.Errorf("Expected error for dry run, got nil")
+				}
+				return // Skip the rest of the test for error cases
+			}
+			if err != nil {
+				t.Errorf("Dry run failed: %v", err)
+				return
+			}
+
+			// Test actual execution
+			err = RunAddRule(tt.language, tempDir, false)
+			if err != nil {
+				t.Errorf("Actual run failed: %v", err)
+				return
+			}
+
+			// Verify the file was created
+			if tt.expectedFile != "" {
+				expectedPath := filepath.Join(tempDir, ".github", "instructions", tt.expectedFile)
+				if _, err := os.Stat(expectedPath); os.IsNotExist(err) {
+					t.Errorf("Expected file was not created: %s", expectedPath)
+				}
+
+				// Verify file content is not empty
+				content, err := os.ReadFile(expectedPath)
+				if err != nil {
+					t.Errorf("Failed to read created file: %v", err)
+				}
+				if len(content) == 0 {
+					t.Errorf("Created file is empty")
+				}
+			}
+		})
+	}
+}
+
+func TestValidateAndNormalizeLanguage(t *testing.T) {
+	tests := []struct {
+		input       string
+		expected    string
+		expectError bool
+	}{
+		{"go", "go", false},
+		{"Go", "go", false},
+		{"GO", "go", false},
+		{"typescript", "typescript", false},
+		{"ts", "typescript", false},
+		{"python", "python", false},
+		{"py", "python", false},
+		{"docker", "docker", false},
+		{"react", "react", false},
+		{"javascript", "typescript", false}, // alias
+		{"js", "typescript", false},         // alias
+		{"golang", "go", false},             // alias
+		{"unsupported", "", true},
+		{"", "", true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			result, err := validateAndNormalizeLanguage(tt.input)
+
+			if tt.expectError {
+				if err == nil {
+					t.Errorf("Expected error for input %s, got nil", tt.input)
+				}
+				return
+			}
+
+			if err != nil {
+				t.Errorf("Unexpected error for input %s: %v", tt.input, err)
+				return
+			}
+
+			if result != tt.expected {
+				t.Errorf("Expected %s, got %s for input %s", tt.expected, result, tt.input)
+			}
+		})
+	}
+}
+
+func TestCreateInstructionsDirectory(t *testing.T) {
+	tempDir, err := os.MkdirTemp("", "test_instructions_dir")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	instructionsDir := filepath.Join(tempDir, ".github", "instructions")
+
+	// Test dry run
+	err = createInstructionsDirectory(instructionsDir, true)
+	if err != nil {
+		t.Errorf("Dry run failed: %v", err)
+	}
+
+	// Verify directory doesn't exist after dry run
+	if _, err := os.Stat(instructionsDir); !os.IsNotExist(err) {
+		t.Errorf("Directory should not exist after dry run")
+	}
+
+	// Test actual creation
+	err = createInstructionsDirectory(instructionsDir, false)
+	if err != nil {
+		t.Errorf("Directory creation failed: %v", err)
+	}
+
+	// Verify directory exists
+	if _, err := os.Stat(instructionsDir); os.IsNotExist(err) {
+		t.Errorf("Directory was not created")
+	}
+}
+
+func TestCreateRuleFile(t *testing.T) {
+	tempDir, err := os.MkdirTemp("", "test_rule_file")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	// Create the directory first
+	instructionsDir := filepath.Join(tempDir, ".github", "instructions")
+	err = os.MkdirAll(instructionsDir, 0755)
+	if err != nil {
+		t.Fatalf("Failed to create instructions directory: %v", err)
+	}
+
+	ruleFilePath := filepath.Join(instructionsDir, "go.instructions.md")
+	testContent := "# Go Rules\nTest content for Go rules"
+
+	// Test dry run
+	err = createRuleFile(ruleFilePath, testContent, true)
+	if err != nil {
+		t.Errorf("Dry run failed: %v", err)
+	}
+
+	// Verify file doesn't exist after dry run
+	if _, err := os.Stat(ruleFilePath); !os.IsNotExist(err) {
+		t.Errorf("File should not exist after dry run")
+	}
+
+	// Test actual creation
+	err = createRuleFile(ruleFilePath, testContent, false)
+	if err != nil {
+		t.Errorf("File creation failed: %v", err)
+	}
+
+	// Verify file exists and has correct content
+	if _, err := os.Stat(ruleFilePath); os.IsNotExist(err) {
+		t.Errorf("File was not created")
+	}
+
+	content, err := os.ReadFile(ruleFilePath)
+	if err != nil {
+		t.Errorf("Failed to read created file: %v", err)
+	}
+
+	if string(content) != testContent {
+		t.Errorf("File content mismatch. Expected: %s, Got: %s", testContent, string(content))
+	}
+}
