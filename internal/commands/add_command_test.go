@@ -1,10 +1,12 @@
 package commands
 
 import (
-	"os"
-	"path/filepath"
-	"strings"
-	"testing"
+    "os"
+    "path/filepath"
+    "strings"
+    "testing"
+
+    "github.com/shibukawa/anyagent/internal/config"
 )
 
 func TestRunAddCommand(t *testing.T) {
@@ -63,6 +65,37 @@ func TestRunAddCommand(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestRunAddCommandClaude(t *testing.T) {
+    tempDir := t.TempDir()
+    // AGENTS.md
+    if err := os.WriteFile(filepath.Join(tempDir, "AGENTS.md"), []byte("# Test"), 0644); err != nil {
+        t.Fatalf("failed to create AGENTS.md: %v", err)
+    }
+    // Enable claude
+    cfg := &config.ProjectConfig{EnabledAgents: []string{"claude"}}
+    if err := config.SaveProjectConfig(tempDir, cfg); err != nil {
+        t.Fatalf("failed to save config: %v", err)
+    }
+    // Dry run should succeed
+    if err := RunAddCommand("create-readme", tempDir, true); err != nil {
+        t.Fatalf("dry run failed: %v", err)
+    }
+    // Actual
+    if err := RunAddCommand("create-readme", tempDir, false); err != nil {
+        t.Fatalf("RunAddCommand failed: %v", err)
+    }
+    // Expect .claude/commands/create-readme.md and YAML frontmatter with allowed-tools/description
+    path := filepath.Join(tempDir, ".claude", "commands", "create-readme.md")
+    b, err := os.ReadFile(path)
+    if err != nil {
+        t.Fatalf("Claude command not readable: %v", err)
+    }
+    s := string(b)
+    if !strings.HasPrefix(s, "---") || !strings.Contains(s, "allowed-tools:") || !strings.Contains(s, "description:") {
+        t.Fatalf("Claude command missing required frontmatter:\n%s", s)
+    }
 }
 
 func TestRunAddCommandNotInitialized(t *testing.T) {

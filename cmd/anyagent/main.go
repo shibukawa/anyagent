@@ -11,30 +11,31 @@ import (
 
 // CLI represents the command line interface structure
 type CLI struct {
-	EditTemplate EditTemplateCmd `cmd:"" help:"Setup template editing environment and launch VSCode"`
-	Init         InitCmd         `cmd:"" help:"Initialize anyagent configuration for a project"`
-	Add          AddCmd          `cmd:"" help:"Add additional configurations to the project"`
-	Remove       RemoveCmd       `cmd:"" help:"Remove configurations from the project"`
-	List         ListCmd         `cmd:"" help:"List configuration status for the project"`
+    Init InitCmd `cmd:"" help:"Setup template editing environment and launch VSCode"`
+    Sync SyncCmd `cmd:"" help:"Initialize/sync anyagent configuration for a project"`
+    Add          AddCmd          `cmd:"" help:"Add additional configurations to the project"`
+    Remove       RemoveCmd       `cmd:"" help:"Remove configurations from the project"`
+    List         ListCmd         `cmd:"" help:"List configuration status for the project"`
 }
 
-// EditTemplateCmd represents the edit-template command
-type EditTemplateCmd struct {
-	DryRun    bool `help:"Show what would be done without actually doing it" short:"n"`
-	HardReset bool `help:"Force reset all templates to original versions" short:"r"`
-}
-
-// InitCmd represents the init command
+// InitCmd represents the init command (template editing environment)
 type InitCmd struct {
-	ProjectDir string   `arg:"" optional:"" help:"Project directory (default: current directory)"`
-	Agents     []string `help:"AI agents to configure (copilot,qdev,claude,junie,gemini)" short:"a"`
-	DryRun     bool     `help:"Show what would be done without actually doing it" short:"n"`
+    DryRun    bool `help:"Show what would be done without actually doing it" short:"n"`
+    HardReset bool `help:"Force reset all templates to original versions" short:"r"`
+}
+
+// SyncCmd represents the sync command (project initialization/sync)
+type SyncCmd struct {
+    ProjectDir string   `arg:"" optional:"" help:"Project directory (default: current directory)"`
+    Agents     []string `help:"AI agents to configure (copilot,qdev,claude,gemini,codex)" short:"a"`
+    DryRun     bool     `help:"Show what would be done without actually doing it" short:"n"`
 }
 
 // AddCmd represents the add command with subcommands
 type AddCmd struct {
-	Rule    AddRuleCmd    `cmd:"" help:"Add language-specific rules to the project"`
-	Command AddCommandCmd `cmd:"" help:"Add VS Code Copilot prompt commands to the project"`
+    Rule    AddRuleCmd    `cmd:"" help:"Add language-specific rules to the project"`
+    Command AddCommandCmd `cmd:"" help:"Add VS Code Copilot prompt commands to the project"`
+    Mcp     AddMCPCmd     `cmd:"" help:"Add MCP server definition and project wiring"`
 }
 
 // RemoveCmd represents the remove command with subcommands
@@ -58,10 +59,18 @@ type AddRuleCmd struct {
 
 // AddCommandCmd represents the add command subcommand
 type AddCommandCmd struct {
-	Command    string `arg:"" optional:"" help:"Command name to add (e.g., create-readme, editorconfig)"`
-	ProjectDir string `help:"Project directory (default: current directory)" short:"d"`
-	DryRun     bool   `help:"Show what would be done without actually doing it" short:"n"`
-	List       bool   `help:"List available commands" short:"l"`
+    Command    string `arg:"" optional:"" help:"Command name to add (e.g., create-readme, editorconfig)"`
+    ProjectDir string `help:"Project directory (default: current directory)" short:"d"`
+    DryRun     bool   `help:"Show what would be done without actually doing it" short:"n"`
+    List       bool   `help:"List available commands" short:"l"`
+}
+
+// AddMCPCmd represents the add mcp subcommand
+type AddMCPCmd struct {
+    Name       string `arg:"" help:"MCP server name (e.g., postgres, filesystem)"`
+    Cmd        string `help:"Command to launch the MCP server" required:""`
+    ProjectDir string `help:"Project directory (default: current directory)" short:"d"`
+    DryRun     bool   `help:"Show what would be done without actually doing it" short:"n"`
 }
 
 // RemoveRuleCmd represents the remove rule subcommand
@@ -88,23 +97,23 @@ type ListCommandCmd struct {
 	ProjectDir string `help:"Project directory (default: current directory)" short:"d"`
 }
 
-// Run executes the edit-template command
-func (cmd *EditTemplateCmd) Run() error {
-	// Get user config directory
-	userConfigDir, err := config.GetUserConfigDir()
-	if err != nil {
-		return fmt.Errorf("failed to get user config directory: %w", err)
-	}
+// Run executes the init command (template editing environment)
+func (cmd *InitCmd) Run() error {
+    // Get user config directory
+    userConfigDir, err := config.GetUserConfigDir()
+    if err != nil {
+        return fmt.Errorf("failed to get user config directory: %w", err)
+    }
 
 	fmt.Printf("Using config directory: %s\n", userConfigDir)
 
-	// Run the edit template functionality
-	return commands.RunEditTemplate(userConfigDir, cmd.DryRun, cmd.HardReset)
+    // Run the edit template functionality
+    return commands.RunEditTemplate(userConfigDir, cmd.DryRun, cmd.HardReset)
 }
 
-// Run executes the init command
-func (cmd *InitCmd) Run() error {
-	return commands.RunInit(cmd.ProjectDir, cmd.Agents, cmd.DryRun)
+// Run executes the sync command (project initialization/sync)
+func (cmd *SyncCmd) Run() error {
+    return commands.RunSync(cmd.ProjectDir, cmd.Agents, cmd.DryRun)
 }
 
 // Run executes the add rule command
@@ -123,6 +132,11 @@ func (cmd *AddCommandCmd) Run() error {
 	}
 
 	return commands.RunAddCommand(cmd.Command, cmd.ProjectDir, cmd.DryRun)
+}
+
+// Run executes the add mcp subcommand
+func (cmd *AddMCPCmd) Run() error {
+    return commands.RunAddMCP(cmd.Name, cmd.Cmd, cmd.ProjectDir, cmd.DryRun)
 }
 
 // Run executes the remove rule command

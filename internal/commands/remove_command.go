@@ -31,9 +31,9 @@ func RunRemoveCommand(command, projectDir string, dryRun bool) error {
 
 	// Check if project is initialized (has AGENTS.md)
 	agentsPath := filepath.Join(projectDir, "AGENTS.md")
-	if _, err := os.Stat(agentsPath); os.IsNotExist(err) {
-		return fmt.Errorf("project is not initialized with anyagent. Run 'anyagent init' first")
-	}
+    if _, err := os.Stat(agentsPath); os.IsNotExist(err) {
+        return fmt.Errorf("project is not initialized with anyagent. Run 'anyagent sync' first")
+    }
 
 	// Validate command name
 	if command == "" {
@@ -47,21 +47,41 @@ func RunRemoveCommand(command, projectDir string, dryRun bool) error {
 		copilotExists = true
 	}
 
-	// Check if Amazon Q Developer command file exists
-	qdevExists := false
-	qdevCommandFilePath := ""
-	homeDir, err := os.UserHomeDir()
-	if err == nil {
-		qdevCommandName := strings.ReplaceAll(strings.ReplaceAll(command, "-", " "), "_", " ")
-		qdevCommandFilePath = filepath.Join(homeDir, ".aws", "amazonq", "prompts", fmt.Sprintf("%s.md", qdevCommandName))
-		if _, err := os.Stat(qdevCommandFilePath); err == nil {
-			qdevExists = true
-		}
-	}
+    // Check if Amazon Q Developer command file exists
+    qdevExists := false
+    qdevCommandFilePath := ""
+    homeDir, err := os.UserHomeDir()
+    if err == nil {
+        qdevCommandName := strings.ReplaceAll(strings.ReplaceAll(command, "-", " "), "_", " ")
+        qdevCommandFilePath = filepath.Join(homeDir, ".aws", "amazonq", "prompts", fmt.Sprintf("%s.md", qdevCommandName))
+        if _, err := os.Stat(qdevCommandFilePath); err == nil {
+            qdevExists = true
+        }
+    }
 
-	if !copilotExists && !qdevExists {
-		return fmt.Errorf("command '%s' is not installed", command)
-	}
+    // Check if Codex command file exists
+    codexExists := false
+    codexCommandFilePath := ""
+    if homeDir == "" {
+        homeDir, _ = os.UserHomeDir()
+    }
+    if homeDir != "" {
+        codexCommandFilePath = filepath.Join(homeDir, ".codex", "prompts", fmt.Sprintf("%s.md", command))
+        if _, err := os.Stat(codexCommandFilePath); err == nil {
+            codexExists = true
+        }
+    }
+
+    // Check if Claude command file exists
+    claudeExists := false
+    claudeCommandFilePath := filepath.Join(projectDir, ".claude", "commands", fmt.Sprintf("%s.md", command))
+    if _, err := os.Stat(claudeCommandFilePath); err == nil {
+        claudeExists = true
+    }
+
+    if !copilotExists && !qdevExists && !codexExists && !claudeExists {
+        return fmt.Errorf("command '%s' is not installed", command)
+    }
 
 	// Remove Copilot command file
 	if copilotExists {
@@ -70,15 +90,34 @@ func RunRemoveCommand(command, projectDir string, dryRun bool) error {
 		}
 	}
 
-	// Remove Amazon Q Developer command file
-	if qdevExists {
-		if err := removeCommandFile(qdevCommandFilePath, "Amazon Q Developer", dryRun); err != nil {
-			fmt.Printf("⚠️  Warning: Could not remove Amazon Q Developer command file: %v\n", err)
-		}
-	}
+    // Remove Amazon Q Developer command file
+    if qdevExists {
+        if err := removeCommandFile(qdevCommandFilePath, "Amazon Q Developer", dryRun); err != nil {
+            fmt.Printf("⚠️  Warning: Could not remove Amazon Q Developer command file: %v\n", err)
+        }
+    }
 
-	fmt.Printf("✅ %s command removed successfully\n", command)
-	return nil
+    // Remove Codex command file
+    if codexExists {
+        if err := removeCommandFile(codexCommandFilePath, "Codex", dryRun); err != nil {
+            fmt.Printf("⚠️  Warning: Could not remove Codex command file: %v\n", err)
+        }
+    }
+
+    // Remove Claude command file
+    if claudeExists {
+        if err := removeCommandFile(claudeCommandFilePath, "Claude Code", dryRun); err != nil {
+            fmt.Printf("⚠️  Warning: Could not remove Claude command file: %v\n", err)
+        }
+    }
+
+    fmt.Printf("✅ %s command removed successfully\n", command)
+
+    // Update project config to remove the command from installed_commands
+    if err := removeInstalledCommandFromConfig(projectDir, command, dryRun); err != nil {
+        fmt.Printf("⚠️  Warning: Failed to update project config when removing '%s': %v\n", command, err)
+    }
+    return nil
 }
 
 // RunListCommands executes the list commands command functionality
@@ -150,4 +189,33 @@ func removeCommandFile(filePath, agentType string, dryRun bool) error {
 
 	fmt.Printf("🗑️  Removing %s command file: %s\n", agentType, filePath)
 	return os.Remove(filePath)
+}
+
+// removeInstalledCommandFromConfig removes a command entry from .anyagent.yaml
+func removeInstalledCommandFromConfig(projectDir, command string, dryRun bool) error {
+    configPath := config.GetProjectConfigPath(projectDir)
+    projectConfig, err := config.LoadProjectConfig(configPath)
+    if err != nil {
+        return err
+    }
+
+    // Filter out the command
+    var newCommands []string
+    removed := false
+    for _, c := range projectConfig.InstalledCommands {
+        if c != command {
+            newCommands = append(newCommands, c)
+        } else {
+            removed = true
+        }
+    }
+    if !removed {
+        return nil
+    }
+    projectConfig.InstalledCommands = newCommands
+    if dryRun {
+        fmt.Printf("[DRY RUN] Would remove command '%s' from .anyagent.yaml\n", command)
+        return nil
+    }
+    return projectConfig.Save(configPath)
 }

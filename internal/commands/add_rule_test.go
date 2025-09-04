@@ -1,9 +1,12 @@
 package commands
 
 import (
-	"os"
-	"path/filepath"
-	"testing"
+    "os"
+    "path/filepath"
+    "strings"
+    "testing"
+
+    "github.com/shibukawa/anyagent/internal/config"
 )
 
 func TestRunAddRule(t *testing.T) {
@@ -112,6 +115,66 @@ func TestRunAddRule(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestRunAddRuleCodexUpdatesAgentsOnly(t *testing.T) {
+    // Create temporary directory
+    tempDir := t.TempDir()
+
+    // Create AGENTS.md to simulate initialized project
+    agentsPath := filepath.Join(tempDir, "AGENTS.md")
+    if err := os.WriteFile(agentsPath, []byte("# AI Agents Configuration\n"), 0644); err != nil {
+        t.Fatalf("Failed to create AGENTS.md: %v", err)
+    }
+
+    // Save project config with Codex enabled
+    cfg := &config.ProjectConfig{EnabledAgents: []string{"codex"}}
+    if err := config.SaveProjectConfig(tempDir, cfg); err != nil {
+        t.Fatalf("Failed to save project config: %v", err)
+    }
+
+    // Run add rule for Go
+    if err := RunAddRule("go", tempDir, false); err != nil {
+        t.Fatalf("RunAddRule failed: %v", err)
+    }
+
+    // Verify no external rule file was created
+    rulePath := filepath.Join(tempDir, ".github", "instructions", "go.instructions.md")
+    if _, err := os.Stat(rulePath); !os.IsNotExist(err) {
+        t.Errorf("External rule file should not be created for Codex: %s", rulePath)
+    }
+
+    // Verify AGENTS.md contains the Go extra rule content
+    content, err := os.ReadFile(agentsPath)
+    if err != nil {
+        t.Fatalf("Failed to read AGENTS.md: %v", err)
+    }
+    if !strings.Contains(string(content), "# Go Language Specific Rules") {
+        t.Errorf("AGENTS.md was not updated with Go rules for Codex")
+    }
+}
+
+func TestRunAddRuleQDevCreatesRuleFile(t *testing.T) {
+    tempDir := t.TempDir()
+    // AGENTS.md present
+    if err := os.WriteFile(filepath.Join(tempDir, "AGENTS.md"), []byte("# AI Agents Configuration\n"), 0644); err != nil {
+        t.Fatalf("failed to create AGENTS.md: %v", err)
+    }
+    // Set enabled agent to qdev
+    cfg := &config.ProjectConfig{EnabledAgents: []string{"qdev"}}
+    if err := config.SaveProjectConfig(tempDir, cfg); err != nil {
+        t.Fatalf("failed to save project config: %v", err)
+    }
+
+    if err := RunAddRule("go", tempDir, false); err != nil {
+        t.Fatalf("RunAddRule failed: %v", err)
+    }
+
+    // Expect .amazonq/rules/go.md
+    path := filepath.Join(tempDir, ".amazonq", "rules", "go.md")
+    if _, err := os.Stat(path); os.IsNotExist(err) {
+        t.Fatalf("Q Dev rule file not created: %s", path)
+    }
 }
 
 func TestValidateAndNormalizeLanguage(t *testing.T) {

@@ -13,21 +13,21 @@ func TestRunInit(t *testing.T) {
 		agentNames  []string
 		expectError bool
 	}{
-		{
-			name:        "valid agents",
-			agentNames:  []string{"copilot", "claude"},
-			expectError: false,
-		},
-		{
-			name:        "invalid agent",
-			agentNames:  []string{"invalid"},
-			expectError: true,
-		},
-		{
-			name:        "mixed valid and invalid agents",
-			agentNames:  []string{"copilot", "invalid"},
-			expectError: true,
-		},
+        {
+            name:        "valid single agent",
+            agentNames:  []string{"copilot"},
+            expectError: false,
+        },
+        {
+            name:        "invalid agent",
+            agentNames:  []string{"invalid"},
+            expectError: true,
+        },
+        {
+            name:        "multiple agents not allowed",
+            agentNames:  []string{"copilot", "claude"},
+            expectError: true,
+        },
 	}
 
 	for _, tt := range tests {
@@ -65,12 +65,12 @@ func TestValidateAgentNames(t *testing.T) {
 			expectError: false,
 			expectCount: 1,
 		},
-		{
-			name:        "valid multiple agents",
-			agentNames:  []string{"copilot", "claude", "qdev"},
-			expectError: false,
-			expectCount: 3,
-		},
+        {
+            name:        "multiple agents not allowed",
+            agentNames:  []string{"copilot", "claude", "qdev"},
+            expectError: true,
+            expectCount: 0,
+        },
 		{
 			name:        "invalid agent",
 			agentNames:  []string{"invalid"},
