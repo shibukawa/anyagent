@@ -31,9 +31,9 @@ func RunRemoveRule(language, projectDir string, dryRun bool) error {
 
 	// Check if project is initialized (has AGENTS.md)
 	agentsPath := filepath.Join(projectDir, "AGENTS.md")
-    if _, err := os.Stat(agentsPath); os.IsNotExist(err) {
-        return fmt.Errorf("project is not initialized with anyagent. Run 'anyagent sync' first")
-    }
+	if _, err := os.Stat(agentsPath); os.IsNotExist(err) {
+		return fmt.Errorf("project is not initialized with anyagent. Run 'anyagent sync' first")
+	}
 
 	// Validate and normalize language name
 	normalizedLanguage, err := validateAndNormalizeLanguage(language)
@@ -41,31 +41,31 @@ func RunRemoveRule(language, projectDir string, dryRun bool) error {
 		return fmt.Errorf("unsupported language: %s. Supported: %s", language, strings.Join(SupportedRules, ", "))
 	}
 
-    // When Copilot is enabled, remove external rule file. For Codex-only projects
-    // there is no external rule file, so skip this step.
-    if shouldCreateCopilotRuleFiles(projectDir) {
-        // Check if rule file exists
-        ruleFilePath := filepath.Join(projectDir, ".github", "instructions", fmt.Sprintf("%s.instructions.md", normalizedLanguage))
-        if _, err := os.Stat(ruleFilePath); os.IsNotExist(err) {
-            return fmt.Errorf("rule file does not exist: %s", ruleFilePath)
-        }
+	// When Copilot is enabled, remove external rule file. For Codex-only projects
+	// there is no external rule file, so skip this step.
+	if shouldCreateCopilotRuleFiles(projectDir) {
+		// Check if rule file exists
+		ruleFilePath := filepath.Join(projectDir, ".github", "instructions", fmt.Sprintf("%s.instructions.md", normalizedLanguage))
+		if _, err := os.Stat(ruleFilePath); os.IsNotExist(err) {
+			return fmt.Errorf("rule file does not exist: %s", ruleFilePath)
+		}
 
-        // Remove the rule file
-        if err := removeRuleFile(ruleFilePath, dryRun); err != nil {
-            return fmt.Errorf("failed to remove rule file: %w", err)
-        }
-    } else if shouldCreateQDevRuleFiles(projectDir) {
-        // Remove Q Developer rule file if present
-        qdevRulePath := filepath.Join(projectDir, ".amazonq", "rules", fmt.Sprintf("%s.md", normalizedLanguage))
-        if _, err := os.Stat(qdevRulePath); os.IsNotExist(err) {
-            return fmt.Errorf("rule file does not exist: %s", qdevRulePath)
-        }
-        if err := removeRuleFile(qdevRulePath, dryRun); err != nil {
-            return fmt.Errorf("failed to remove rule file: %w", err)
-        }
-    } else {
-        fmt.Printf("ℹ️  Codex selected: no external rule files to remove; updating AGENTS.md only.\n")
-    }
+		// Remove the rule file
+		if err := removeRuleFile(ruleFilePath, dryRun); err != nil {
+			return fmt.Errorf("failed to remove rule file: %w", err)
+		}
+	} else if shouldCreateQDevRuleFiles(projectDir) {
+		// Remove Q Developer rule file if present
+		qdevRulePath := filepath.Join(projectDir, ".amazonq", "rules", fmt.Sprintf("%s.md", normalizedLanguage))
+		if _, err := os.Stat(qdevRulePath); os.IsNotExist(err) {
+			return fmt.Errorf("rule file does not exist: %s", qdevRulePath)
+		}
+		if err := removeRuleFile(qdevRulePath, dryRun); err != nil {
+			return fmt.Errorf("failed to remove rule file: %w", err)
+		}
+	} else {
+		fmt.Printf("ℹ️  Codex selected: no external rule files to remove; updating AGENTS.md only.\n")
+	}
 
 	// Update project configuration and regenerate AGENTS.md
 	if !dryRun {
@@ -103,40 +103,40 @@ func RunListRules(projectDir string) error {
 		return nil
 	}
 
-    instructionsDir := filepath.Join(projectDir, ".github", "instructions")
+	instructionsDir := filepath.Join(projectDir, ".github", "instructions")
 
-    // Load installed rules from config and detect selected agent
-    cfg, _ := config.LoadProjectConfig(config.GetProjectConfigPath(projectDir))
-    installed := map[string]bool{}
-    for _, r := range cfg.InstalledRules {
-        installed[r] = true
-    }
-    agent := selectedAgent(projectDir)
+	// Load installed rules from config and detect selected agent
+	cfg, _ := config.LoadProjectConfig(config.GetProjectConfigPath(projectDir))
+	installed := map[string]bool{}
+	for _, r := range cfg.InstalledRules {
+		installed[r] = true
+	}
+	agent := selectedAgent(projectDir)
 
-    // Check each supported rule
-    fmt.Println("Available rules:")
-    installedCount := 0
-    for _, rule := range SupportedRules {
-        isInstalled := installed[rule]
-        // If not recorded in config, consider Copilot file presence
-        if !isInstalled {
-            if _, err := os.Stat(filepath.Join(instructionsDir, fmt.Sprintf("%s.instructions.md", rule))); err == nil {
-                isInstalled = true
-            }
-        }
+	// Check each supported rule
+	fmt.Println("Available rules:")
+	installedCount := 0
+	for _, rule := range SupportedRules {
+		isInstalled := installed[rule]
+		// If not recorded in config, consider Copilot file presence
+		if !isInstalled {
+			if _, err := os.Stat(filepath.Join(instructionsDir, fmt.Sprintf("%s.instructions.md", rule))); err == nil {
+				isInstalled = true
+			}
+		}
 
-        if isInstalled {
-            // Add hint for Codex listing
-            if agent == "codex" {
-                fmt.Printf("  ✅ %s (installed in AGENTS.md)\n", rule)
-            } else {
-                fmt.Printf("  ✅ %s (installed)\n", rule)
-            }
-            installedCount++
-        } else {
-            fmt.Printf("  ⬜ %s (not installed)\n", rule)
-        }
-    }
+		if isInstalled {
+			// Add hint for Codex listing
+			if agent == "codex" {
+				fmt.Printf("  ✅ %s (installed in AGENTS.md)\n", rule)
+			} else {
+				fmt.Printf("  ✅ %s (installed)\n", rule)
+			}
+			installedCount++
+		} else {
+			fmt.Printf("  ⬜ %s (not installed)\n", rule)
+		}
+	}
 
 	fmt.Printf("\nSummary: %d/%d rules installed\n", installedCount, len(SupportedRules))
 
@@ -179,10 +179,10 @@ func removeFromProjectConfigAndRegenerate(projectDir, rule string) error {
 		}
 	}
 
-    if !found {
-        // Rule wasn't in config, just regenerate at the project directory
-        return projectConfig.RegenerateAgentsFileAt(projectDir)
-    }
+	if !found {
+		// Rule wasn't in config, just regenerate at the project directory
+		return projectConfig.RegenerateAgentsFileAt(projectDir)
+	}
 
 	// Update the rules list
 	projectConfig.InstalledRules = newRules
@@ -192,6 +192,6 @@ func removeFromProjectConfigAndRegenerate(projectDir, rule string) error {
 		return fmt.Errorf("failed to save project config: %w", err)
 	}
 
-    // Regenerate AGENTS.md at the specified project directory
-    return projectConfig.RegenerateAgentsFileAt(projectDir)
+	// Regenerate AGENTS.md at the specified project directory
+	return projectConfig.RegenerateAgentsFileAt(projectDir)
 }

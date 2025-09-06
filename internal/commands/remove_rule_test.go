@@ -1,11 +1,11 @@
 package commands
 
 import (
-    "os"
-    "path/filepath"
-    "testing"
+	"os"
+	"path/filepath"
+	"testing"
 
-    "github.com/shibukawa/anyagent/internal/config"
+	"github.com/shibukawa/anyagent/internal/config"
 )
 
 func TestRunRemoveRule(t *testing.T) {
@@ -65,28 +65,28 @@ func TestRunRemoveRule(t *testing.T) {
 }
 
 func TestRunRemoveRuleQDev(t *testing.T) {
-    tempDir := t.TempDir()
-    // AGENTS.md present
-    if err := os.WriteFile(filepath.Join(tempDir, "AGENTS.md"), []byte("# AGENTS"), 0644); err != nil {
-        t.Fatalf("failed to write AGENTS.md: %v", err)
-    }
-    // Enable qdev
-    if err := config.SaveProjectConfig(tempDir, &config.ProjectConfig{EnabledAgents: []string{"qdev"}}); err != nil {
-        t.Fatalf("failed to save config: %v", err)
-    }
-    // Create Q Dev rule file
-    rulesDir := filepath.Join(tempDir, ".amazonq", "rules")
-    if err := os.MkdirAll(rulesDir, 0755); err != nil {
-        t.Fatalf("failed to create rules dir: %v", err)
-    }
-    rulePath := filepath.Join(rulesDir, "go.md")
-    if err := os.WriteFile(rulePath, []byte("# Go Rules"), 0644); err != nil {
-        t.Fatalf("failed to create rule file: %v", err)
-    }
-    // Dry run should succeed
-    if err := RunRemoveRule("go", tempDir, true); err != nil {
-        t.Fatalf("dry run failed: %v", err)
-    }
+	tempDir := t.TempDir()
+	// AGENTS.md present
+	if err := os.WriteFile(filepath.Join(tempDir, "AGENTS.md"), []byte("# AGENTS"), 0644); err != nil {
+		t.Fatalf("failed to write AGENTS.md: %v", err)
+	}
+	// Enable qdev
+	if err := config.SaveProjectConfig(tempDir, &config.ProjectConfig{EnabledAgents: []string{"qdev"}}); err != nil {
+		t.Fatalf("failed to save config: %v", err)
+	}
+	// Create Q Dev rule file
+	rulesDir := filepath.Join(tempDir, ".amazonq", "rules")
+	if err := os.MkdirAll(rulesDir, 0755); err != nil {
+		t.Fatalf("failed to create rules dir: %v", err)
+	}
+	rulePath := filepath.Join(rulesDir, "go.md")
+	if err := os.WriteFile(rulePath, []byte("# Go Rules"), 0644); err != nil {
+		t.Fatalf("failed to create rule file: %v", err)
+	}
+	// Dry run should succeed
+	if err := RunRemoveRule("go", tempDir, true); err != nil {
+		t.Fatalf("dry run failed: %v", err)
+	}
 }
 
 func TestRunListRules(t *testing.T) {

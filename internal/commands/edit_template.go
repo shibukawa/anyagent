@@ -263,7 +263,7 @@ func printTemplateInfo(configDir string) {
 	fmt.Printf("\n💡 Next Steps:\n")
 	fmt.Printf("  1. Edit template files in VSCode\n")
 	fmt.Printf("  2. Customize agent configurations\n")
-    fmt.Printf("  3. Use 'anyagent sync' in your projects\n")
+	fmt.Printf("  3. Use 'anyagent sync' in your projects\n")
 	fmt.Printf("\n🔧 This directory is also an anyagent project!\n")
 	fmt.Printf("   You can use AI assistants to help edit these templates.\n")
 	fmt.Printf("%s\n", separator)

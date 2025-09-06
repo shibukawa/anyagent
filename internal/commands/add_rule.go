@@ -40,9 +40,9 @@ func RunAddRule(language, projectDir string, dryRun bool) error {
 
 	// Check if project is initialized (has AGENTS.md)
 	agentsPath := filepath.Join(projectDir, "AGENTS.md")
-    if _, err := os.Stat(agentsPath); os.IsNotExist(err) {
-        return fmt.Errorf("project is not initialized with anyagent. Run 'anyagent sync' first")
-    }
+	if _, err := os.Stat(agentsPath); os.IsNotExist(err) {
+		return fmt.Errorf("project is not initialized with anyagent. Run 'anyagent sync' first")
+	}
 
 	// Validate and normalize language name
 	normalizedLanguage, err := validateAndNormalizeLanguage(language)
@@ -56,40 +56,40 @@ func RunAddRule(language, projectDir string, dryRun bool) error {
 		return fmt.Errorf("failed to get rule template: %w", err)
 	}
 
-    // Create external rule files for agent-specific locations
-    if shouldCreateCopilotRuleFiles(projectDir) {
-        // Create GitHub Copilot instructions directory
-        copilotInstructionsDir := filepath.Join(projectDir, ".github", "instructions")
-        if err := createInstructionsDirectory(copilotInstructionsDir, dryRun); err != nil {
-            return fmt.Errorf("failed to create instructions directory: %w", err)
-        }
+	// Create external rule files for agent-specific locations
+	if shouldCreateCopilotRuleFiles(projectDir) {
+		// Create GitHub Copilot instructions directory
+		copilotInstructionsDir := filepath.Join(projectDir, ".github", "instructions")
+		if err := createInstructionsDirectory(copilotInstructionsDir, dryRun); err != nil {
+			return fmt.Errorf("failed to create instructions directory: %w", err)
+		}
 
-        // Create the rule file
-        ruleFilePath := filepath.Join(copilotInstructionsDir, fmt.Sprintf("%s.instructions.md", normalizedLanguage))
-        if err := createRuleFile(ruleFilePath, ruleContent, dryRun); err != nil {
-            return fmt.Errorf("failed to create rule file: %w", err)
-        }
-    } else if shouldCreateQDevRuleFiles(projectDir) {
-        // Amazon Q Developer rules directory
-        qdevRulesDir := filepath.Join(projectDir, ".amazonq", "rules")
-        if err := createInstructionsDirectory(qdevRulesDir, dryRun); err != nil {
-            return fmt.Errorf("failed to create Q Developer rules directory: %w", err)
-        }
-        qdevRulePath := filepath.Join(qdevRulesDir, fmt.Sprintf("%s.md", normalizedLanguage))
-        if err := createRuleFile(qdevRulePath, ruleContent, dryRun); err != nil {
-            return fmt.Errorf("failed to create Q Developer rule file: %w", err)
-        }
-        fmt.Printf("📄 Amazon Q Developer rule created: .amazonq/rules/%s.md\n", normalizedLanguage)
-    } else {
-        fmt.Printf("ℹ️  Codex selected: skipping external rule files; regenerating AGENTS.md only.\n")
-    }
+		// Create the rule file
+		ruleFilePath := filepath.Join(copilotInstructionsDir, fmt.Sprintf("%s.instructions.md", normalizedLanguage))
+		if err := createRuleFile(ruleFilePath, ruleContent, dryRun); err != nil {
+			return fmt.Errorf("failed to create rule file: %w", err)
+		}
+	} else if shouldCreateQDevRuleFiles(projectDir) {
+		// Amazon Q Developer rules directory
+		qdevRulesDir := filepath.Join(projectDir, ".amazonq", "rules")
+		if err := createInstructionsDirectory(qdevRulesDir, dryRun); err != nil {
+			return fmt.Errorf("failed to create Q Developer rules directory: %w", err)
+		}
+		qdevRulePath := filepath.Join(qdevRulesDir, fmt.Sprintf("%s.md", normalizedLanguage))
+		if err := createRuleFile(qdevRulePath, ruleContent, dryRun); err != nil {
+			return fmt.Errorf("failed to create Q Developer rule file: %w", err)
+		}
+		fmt.Printf("📄 Amazon Q Developer rule created: .amazonq/rules/%s.md\n", normalizedLanguage)
+	} else {
+		fmt.Printf("ℹ️  Codex selected: skipping external rule files; regenerating AGENTS.md only.\n")
+	}
 
-    // Update project configuration and regenerate AGENTS.md
-    if !dryRun {
-        if err := updateProjectConfigAndRegenerate(projectDir, normalizedLanguage); err != nil {
-            fmt.Printf("⚠️  Warning: Failed to update configuration: %v\n", err)
-        }
-    }
+	// Update project configuration and regenerate AGENTS.md
+	if !dryRun {
+		if err := updateProjectConfigAndRegenerate(projectDir, normalizedLanguage); err != nil {
+			fmt.Printf("⚠️  Warning: Failed to update configuration: %v\n", err)
+		}
+	}
 
 	fmt.Printf("✅ %s rules added successfully\n", normalizedLanguage)
 	return nil
@@ -201,6 +201,6 @@ func updateProjectConfigAndRegenerate(projectDir, rule string) error {
 		return fmt.Errorf("failed to save project config: %w", err)
 	}
 
-    // Regenerate AGENTS.md at the specified project directory
-    return projectConfig.RegenerateAgentsFileAt(projectDir)
+	// Regenerate AGENTS.md at the specified project directory
+	return projectConfig.RegenerateAgentsFileAt(projectDir)
 }

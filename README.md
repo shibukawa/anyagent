@@ -1,19 +1,19 @@
-# anyagent
+## anyagent
 
-AIエージェント設定管理ツール - 複数のAIコーディングアシスタントの設定を統一的に管理
+Unified configuration manager for multiple AI coding assistants.
 
 ## Overview
 
-`anyagent`は、GitHub Copilot、Amazon Q Developer、Claude Code、IntelliJ IDEA Junieなどの各種AIコーディングアシスタントの設定を統一的に管理するCLIツールです。プロジェクトごとに適切な指示やルールを設定し、各AIエージェントに最適な形式で配信します。
+anyagent is a CLI tool that manages project configuration for multiple AI assistants, including GitHub Copilot, Amazon Q Developer, Claude Code, Gemini Code, and ChatGPT Codex. It composes a single AGENTS.md and generates agent‑specific files as needed.
 
 ## Features
 
-- 🤖 **マルチエージェント対応**: 複数のAIアシスタントを同時サポート
-- 📝 **統一設定管理**: 一つの設定から各エージェント向けに最適化されたファイルを生成
-- 🔧 **言語別ルール**: Go、TypeScript、Python、React、Dockerなどの技術スタック別ルール
-- 📋 **カスタムコマンド**: プロジェクト固有のプロンプトコマンドを追加
-- 🎯 **テンプレートシステム**: 再利用可能な設定テンプレート
-- 📊 **状況管理**: インストール済み設定の追跡と表示
+- 🤖 Multi‑agent: Copilot, Q Dev, Claude, Gemini, Codex
+- 📝 Single‑source config: generates agent‑specific files from one set of templates
+- 🔧 Extra rules: stack‑specific rules merged into AGENTS.md via `{{EXTRA_RULES}}`
+- 📋 Custom commands: per‑agent command files (global install for Q Dev/Codex)
+- 🎯 Template system: reusable templates under `.anyagent/`
+- 📊 Status & management: add/remove/list for rules and commands
 
 ## Installation
 
@@ -24,178 +24,116 @@ go install github.com/shibukawa/anyagent/cmd/anyagent@latest
 ## Quick Start
 
 ```bash
-# プロジェクトを初期化
+# Launch template editing environment (once)
 anyagent init
 
-# 言語別ルールを追加
+# Initialize/sync project (creates .anyagent/ on first run)
+anyagent sync
+
+# Add rules
 anyagent add rule go
 anyagent add rule typescript
 
-# カスタムコマンドを追加
+# Add commands
 anyagent add command review-code
 
-# 現在の設定状況を確認
+# Show status
 anyagent list rule
 anyagent list command
 ```
 
-## Commands
+## Init / Sync / Switch
 
-### 初期化
 ```bash
-anyagent init [directory]           # プロジェクトを初期化
-anyagent edit-template              # テンプレート編集環境を起動
+anyagent init                       # Launch template editing env (user side)
+anyagent sync [directory]           # Distribute .anyagent/ and generate AGENTS.md
+anyagent switch <agent>             # Switch active agent (links/commands refreshed)
+
+# Options
+#   --force, -f   Overwrite existing .anyagent/ on sync
+#   --dry-run, -n Preview actions only
 ```
 
-### ルール管理
+## Rule Management
+
 ```bash
-anyagent add rule <language>        # 言語別ルールを追加
-anyagent remove rule <language>     # 言語別ルールを削除
-anyagent list rule                  # ルール状況を表示
+anyagent add rule <language>
+anyagent remove rule <language>
+anyagent list rule
 ```
 
-### コマンド管理
+## Command Management
+
 ```bash
-anyagent add command <name>         # カスタムコマンドを追加
-anyagent remove command <name>      # カスタムコマンドを削除
-anyagent list command               # コマンド状況を表示
+anyagent add command <name> [--global]  # Q Dev/Codex: use --global to install in user folder
+anyagent remove command <name>
+anyagent list command
+```
+
+## MCP Servers
+
+```bash
+anyagent add mcp <name> --cmd "<launcher and args>" [--global]
+# e.g. anyagent add mcp context7 --cmd "npx -y @upstash/context7-mcp@latest"
 ```
 
 ## Supported AI Agents
 
-各AIエージェントには異なる設定ファイル形式とコマンド形式があります：
-
 ### GitHub Copilot
-- **ルール配置**: `.github/instructions/<language>.instructions.md`
-  - 例: `.github/instructions/go.instructions.md`, `.github/instructions/typescript.instructions.md`
-- **コマンド配置**: `.github/prompts/<command-name>.prompt.md`
-  - 例: `.github/prompts/review-code.prompt.md`
-- **統合設定**: `.github/copilot-instructions.md` → `../AGENTS.md`（相対シンボリックリンク）
-- **ファイル形式**: YAMLフロントマター付きMarkdown
-- **コマンド呼び出し**: `/prompt <command-name>` in VS Code Copilot Chat
-- **ルール読み込み**: 自動的に`.github/instructions/`配下のファイルを読み込み
+- Rules: `.github/instructions/<language>.instructions.md`
+- Commands: `.github/prompts/<command>.prompt.md`
+- Integration: `.github/copilot-instructions.md` → `../AGENTS.md`
+- Format: Markdown with YAML frontmatter
+- MCP: `.vscode/mcp.json` (JSON in project)
 
 ### Amazon Q Developer
-- **ルール配置**: サポートなし（ルールファイル機能なし）
-- **コマンド配置**: `~/.aws/amazonq/prompts/<command name>.md`（グローバル配置）
-  - 例: `~/.aws/amazonq/prompts/review code.md`（ハイフンとアンダースコアをスペースに変換）
-- **統合設定**: `.amazonq/config.json` → `../AGENTS.md`（相対シンボリックリンク）
-- **ファイル形式**: プレーンMarkdown（YAMLフロントマター除去）
-- **コマンド呼び出し**: `@<command name>` in Amazon Q Developer Chat
-- **命名規則**: `review-code` → `review code`、`api_test` → `api test`
+- Rules: reads `.amazonq/rules/` (link AGENTS.md as `.amazonq/rules/AGENTS.md`)
+- Commands: `~/.aws/amazonq/prompts/<command>.md` (global, install via `--global`)
+- Format: plain Markdown (frontmatter removed)
+- MCP: `.amazonq/mcp.json` (JSON in project)
 
 ### Claude Code
-- **ルール配置**: `AGENTS.md`から参照（個別ルールファイルなし）
-- **コマンド配置**: `AGENTS.md`から参照（個別コマンドファイルなし）
-- **統合設定**: `.claude/config.json` → `../AGENTS.md`（相対シンボリックリンク）
-- **ファイル形式**: JSON設定 + `AGENTS.md`シンボリックリンク方式
-- **コマンド呼び出し**: プロジェクト設定に基づく
-- **ルール読み込み**: `AGENTS.md`から統合設定を参照
-
-### IntelliJ IDEA Junie
-- **ルール配置**: `AGENTS.md`から参照（個別ルールファイルなし）
-- **コマンド配置**: `AGENTS.md`から参照（個別コマンドファイルなし）
-- **統合設定**: `.junie/settings.json` → `../AGENTS.md`（相対シンボリックリンク）
-- **ファイル形式**: JSON設定 + `AGENTS.md`シンボリックリンク方式
-- **コマンド呼び出し**: IDE統合コマンド
-- **ルール読み込み**: `AGENTS.md`から統合設定を参照
+- Rules: merged in AGENTS.md
+- Integration: `CLAUDE.md` → `AGENTS.md`
+- Commands: `.claude/commands/<command>.md` (project‑local)
+- MCP: `.claude/mcp.yaml` (YAML in project)
 
 ### Gemini Code
-- **ルール配置**: `AGENTS.md`から参照（個別ルールファイルなし）
-- **コマンド配置**: `AGENTS.md`から参照（個別コマンドファイルなし）
-- **統合設定**: `.gemini/config.json` → `../AGENTS.md`（相対シンボリックリンク）
-- **ファイル形式**: JSON設定 + MCPサーバー連携
-- **コマンド呼び出し**: MCP経由
-- **ルール読み込み**: `AGENTS.md`から統合設定を参照
+- Rules: merged in AGENTS.md
+- Commands: `.gemini/commands/<command>.toml` (TOML with `description` and `prompt`)
+- Integration: no symlink (reads AGENTS.md directly)
+- MCP: `.gemini/mcp.yaml` (YAML in project)
 
-## 設定ファイル管理
+### ChatGPT Codex
+- Rules: merged in AGENTS.md
+- Commands: `~/.codex/prompts/<command>.md` (global, install via `--global`)
+- Integration: AGENTS.md only
+- MCP: `~/.codex/config.toml` (`[mcp_servers.<name>]`, install via `--global`)
+  - sync/switch doesn’t overwrite global config; missing items are warned with an activation hint.
 
-### プロジェクト設定 (`.anyagent.yaml`)
+## Configuration Files
+
+### Project config (`.anyagent/config.yaml`)
+
 ```yaml
 project_name: "myproject"
 project_description: "My awesome project"
 installed_rules:
   - go
   - typescript
+installed_commands:
+  - create-readme
+enabled_agents:
+  - copilot
+mcp_servers:
+  context7: "npx -y @upstash/context7-mcp@latest"
 ```
 
-### 統合設定 (`AGENTS.md`)
-- 全エージェント共通の基本設定
-- プロジェクト情報とルール
-- `{{EXTRA_RULES}}`プレースホルダーでインストール済みルールを動的注入
-- 各エージェントからシンボリックリンクで参照
-
-### プロジェクト構造例
-```
-myproject/
-├── .anyagent.yaml                          # プロジェクト設定
-├── AGENTS.md                               # 統合エージェント設定（動的生成）
-├── .github/
-│   ├── copilot-instructions.md → ../AGENTS.md  # GitHub Copilot統合設定
-│   ├── instructions/                       # GitHub Copilotルール
-│   │   ├── go.instructions.md
-│   │   └── typescript.instructions.md
-│   └── prompts/                            # GitHub Copilotコマンド
-│       ├── review-code.prompt.md
-│       └── generate-tests.prompt.md
-├── .amazonq/
-│   └── config.json → ../AGENTS.md          # Amazon Q Developer統合設定
-├── .claude/
-│   └── config.json → ../AGENTS.md          # Claude Code統合設定
-├── .junie/
-│   └── settings.json → ../AGENTS.md        # IntelliJ IDEA Junie統合設定
-└── .gemini/
-    └── config.json → ../AGENTS.md          # Gemini Code統合設定
-
-# Amazon Q Developerコマンド（グローバル配置）
-~/.aws/amazonq/prompts/
-├── review code.md                          # review-code → review code
-└── generate tests.md                       # generate-tests → generate tests
-```
-
-### ルール追跡システム
-- `anyagent add rule`でルール追加時、`.anyagent.yaml`の`installed_rules`を更新
-- `AGENTS.md`の`{{EXTRA_RULES}}`部分を実際のルール内容で置換
-- OpenAI Codex（ChatGPT）などの単一ファイル制限対応
-
-## Supported Languages/Frameworks
-
-- **go**: Go言語開発ルール
-- **typescript**: TypeScript/JavaScript開発ルール  
-- **python**: Python開発ルール
-- **react**: React開発ルール
-- **docker**: Dockerコンテナ開発ルール
-
-## エージェント別の特徴
-
-### ファイル配置戦略
-- **GitHub Copilot**: プロジェクト内`.github/`配下に分散配置（Gitで管理）
-  - ルール: `.github/instructions/<language>.instructions.md`
-  - コマンド: `.github/prompts/<command>.prompt.md`
-  - 統合設定: `.github/copilot-instructions.md → ../AGENTS.md`
-- **Amazon Q Developer**: ユーザーホーム`~/.aws/amazonq/prompts/`配下にグローバル配置
-  - コマンドのみ: `~/.aws/amazonq/prompts/<command name>.md`
-  - 統合設定: `.amazonq/config.json → ../AGENTS.md`
-- **その他エージェント**: プロジェクト内各エージェント用ディレクトリ + `AGENTS.md`参照
-  - 統合設定のみ: `.<agent>/config.json → ../AGENTS.md`
-
-### ファイル形式の違い
-- **GitHub Copilot**: YAMLフロントマター必須（メタデータ含む）
-- **Amazon Q Developer**: プレーンMarkdown（メタデータ除去）
-- **その他**: JSON設定 + Markdownコンテンツ参照
-
-### コマンド呼び出し方式
-- **Prompt-based**: GitHub Copilot (`/prompt <command>`), Amazon Q Developer (`@<command name>`)
-- **IDE統合**: IntelliJ IDEA Junie, Gemini Code
-- **Chat統合**: Claude Code
-
-### シンボリックリンク構造
-全エージェント（Amazon Q Developer除く）で`AGENTS.md`への相対シンボリックリンクを作成：
-- `.github/copilot-instructions.md → ../AGENTS.md`
-- `.amazonq/config.json → ../AGENTS.md`
-- `.claude/config.json → ../AGENTS.md`
-- `.junie/settings.json → ../AGENTS.md`
-- `.gemini/config.json → ../AGENTS.md`
+### AGENTS.md (composed)
+- Unified settings for all agents
+- Project info and rules
+- Injects concatenated extra rules at `{{EXTRA_RULES}}`
+- Agents like Codex read this single file directly
 
 ## Development
 
@@ -211,8 +149,8 @@ go test ./...
 
 ## License
 
-MIT License
+AGPL-3.0. See `LICENSE`.
 
 ## Contributing
 
-TODO: Contributing guidelines will be added here.
+See README.ja.md for the Japanese version. Contribution guidelines will be added later.
