@@ -11,12 +11,12 @@ import (
 
 // CLI represents the command line interface structure
 type CLI struct {
-	Init   InitCmd   `cmd:"" help:"Setup template editing environment and launch VSCode"`
-	Sync   SyncCmd   `cmd:"" help:"Initialize/sync anyagent configuration for a project"`
-	Add    AddCmd    `cmd:"" help:"Add additional configurations to the project"`
-	Remove RemoveCmd `cmd:"" help:"Remove configurations from the project"`
-	List   ListCmd   `cmd:"" help:"List configuration status for the project"`
-	Switch SwitchCmd `cmd:"" help:"Switch active AI agent for the project"`
+    Init   InitCmd   `cmd:"" help:"Prepare user template environment (~/.anyagent) and open in VSCode"`
+    Sync   SyncCmd   `cmd:"" help:"Initialize/sync project from user templates; prompts for missing placeholders"`
+    Add    AddCmd    `cmd:"" help:"Add additional configurations to the project"`
+    Remove RemoveCmd `cmd:"" help:"Remove configurations from the project"`
+    List   ListCmd   `cmd:"" help:"List configuration status for the project"`
+    Switch SwitchCmd `cmd:"" help:"Switch active AI agent for the project"`
 }
 
 // InitCmd represents the init command (template editing environment)
@@ -62,20 +62,20 @@ type AddRuleCmd struct {
 
 // AddCommandCmd represents the add command subcommand
 type AddCommandCmd struct {
-	Command    string `arg:"" optional:"" help:"Command name to add (e.g., create-readme, editorconfig)"`
-	ProjectDir string `help:"Project directory (default: current directory)" short:"d"`
-	DryRun     bool   `help:"Show what would be done without actually doing it" short:"n"`
-	List       bool   `help:"List available commands" short:"l"`
-	Global     bool   `help:"Install to user-global location when applicable (Q Dev, Codex)"`
+    Command    string `arg:"" optional:"" help:"Command name to add (e.g., create-readme, editorconfig)"`
+    ProjectDir string `help:"Project directory (default: current directory)" short:"d"`
+    DryRun     bool   `help:"Show what would be done without actually doing it" short:"n"`
+    List       bool   `help:"List available commands" short:"l"`
+    Global     bool   `help:"Install to user-global location when applicable (Q Dev, Codex)"`
 }
 
 // AddMCPCmd represents the add mcp subcommand
 type AddMCPCmd struct {
-	Name       string `arg:"" help:"MCP server name (e.g., postgres, filesystem)"`
-	Cmd        string `help:"Command to launch the MCP server" required:""`
-	ProjectDir string `help:"Project directory (default: current directory)" short:"d"`
-	DryRun     bool   `help:"Show what would be done without actually doing it" short:"n"`
-	Global     bool   `help:"Install to user-global location when applicable (Codex)"`
+    Name       string `arg:"" help:"MCP server name (e.g., postgres, filesystem)"`
+    Cmd        string `help:"Command to launch the MCP server" required:""`
+    ProjectDir string `help:"Project directory (default: current directory)" short:"d"`
+    DryRun     bool   `help:"Show what would be done without actually doing it" short:"n"`
+    Global     bool   `help:"Install to user-global location when applicable (Codex)"`
 }
 
 // RemoveRuleCmd represents the remove rule subcommand

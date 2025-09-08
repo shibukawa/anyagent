@@ -1,225 +1,232 @@
 package commands
 
 import (
-	"os"
-	"path/filepath"
-	"strings"
-	"testing"
+    "os"
+    "path/filepath"
+    "strings"
+    "testing"
+
+    "github.com/shibukawa/anyagent/internal/config"
 )
 
-func TestRunInit(t *testing.T) {
-	tests := []struct {
-		name        string
-		agentNames  []string
-		expectError bool
-	}{
-		{
-			name:        "valid single agent",
-			agentNames:  []string{"copilot"},
-			expectError: false,
-		},
-		{
-			name:        "invalid agent",
-			agentNames:  []string{"invalid"},
-			expectError: true,
-		},
-		{
-			name:        "multiple agents not allowed",
-			agentNames:  []string{"copilot", "claude"},
-			expectError: true,
-		},
-	}
+// TestEditTemplateCommand tests the edit-template command functionality
+func TestEditTemplateCommand(t *testing.T) {
+    tempDir := t.TempDir()
+    testConfigDir := filepath.Join(tempDir, "anyagent")
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// Create a temporary directory for testing
-			tempDir, err := os.MkdirTemp("", "test_init_*")
-			if err != nil {
-				t.Fatalf("Failed to create temp directory: %v", err)
-			}
-			defer os.RemoveAll(tempDir)
+    tests := []struct {
+        name          string
+        configDir     string
+        setupExisting bool
+        wantErr       bool
+    }{
+        {
+            name:          "create new template environment",
+            configDir:     testConfigDir,
+            setupExisting: false,
+            wantErr:       false,
+        },
+        {
+            name:          "existing template environment",
+            configDir:     testConfigDir,
+            setupExisting: true,
+            wantErr:       false,
+        },
+    }
 
-			// Run init with dry-run and predefined parameters to avoid interactive prompts
-			err = RunInitWithParams(tempDir, tt.agentNames, "test-project", "Test project description", true)
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+            if tt.setupExisting {
+                // Pre-create the configuration directory for this test
+                err := setupExistingConfig(tt.configDir)
+                if err != nil {
+                    t.Fatalf("Failed to setup existing config: %v", err)
+                }
+            }
 
-			if tt.expectError && err == nil {
-				t.Errorf("Expected error but got none")
-			}
-			if !tt.expectError && err != nil {
-				t.Errorf("Unexpected error: %v", err)
-			}
-		})
-	}
+            err := RunEditTemplate(tt.configDir, true, false) // dryRun = true, hardReset = false for testing
+            if (err != nil) != tt.wantErr {
+                t.Errorf("RunEditTemplate() error = %v, wantErr %v", err, tt.wantErr)
+                return
+            }
+
+            if !tt.wantErr {
+                // Verify the configuration was set up correctly
+                verifyTemplateEnvironment(t, tt.configDir)
+            }
+        })
+    }
 }
 
-func TestValidateAgentNames(t *testing.T) {
-	tests := []struct {
-		name        string
-		agentNames  []string
-		expectError bool
-		expectCount int
-	}{
-		{
-			name:        "valid single agent",
-			agentNames:  []string{"copilot"},
-			expectError: false,
-			expectCount: 1,
-		},
-		{
-			name:        "multiple agents not allowed",
-			agentNames:  []string{"copilot", "claude", "qdev"},
-			expectError: true,
-			expectCount: 0,
-		},
-		{
-			name:        "invalid agent",
-			agentNames:  []string{"invalid"},
-			expectError: true,
-			expectCount: 0,
-		},
-		{
-			name:        "empty list",
-			agentNames:  []string{},
-			expectError: false,
-			expectCount: 0,
-		},
-	}
+// TestEditTemplateWithoutVSCode tests the edit-template command without VSCode launch
+func TestEditTemplateWithoutVSCode(t *testing.T) {
+    tempDir := t.TempDir()
+    testConfigDir := filepath.Join(tempDir, "anyagent")
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			agents, err := validateAgentNames(tt.agentNames)
+    err := RunEditTemplate(testConfigDir, true, false) // dryRun = true, hardReset = false
+    if err != nil {
+        t.Errorf("RunEditTemplate() with dryRun failed: %v", err)
+    }
 
-			if tt.expectError && err == nil {
-				t.Errorf("Expected error but got none")
-			}
-			if !tt.expectError && err != nil {
-				t.Errorf("Unexpected error: %v", err)
-			}
-			if len(agents) != tt.expectCount {
-				t.Errorf("Expected %d agents, got %d", tt.expectCount, len(agents))
-			}
-		})
-	}
+    // Verify all necessary components were created
+    verifyTemplateEnvironment(t, testConfigDir)
 }
 
-func TestCreateAgentsFile(t *testing.T) {
-	// Create a temporary directory for testing
-	tempDir, err := os.MkdirTemp("", "test_agents_file_*")
-	if err != nil {
-		t.Fatalf("Failed to create temp directory: %v", err)
-	}
-	defer os.RemoveAll(tempDir)
+// TestEditTemplateHardReset tests the edit-template command with hard reset
+func TestEditTemplateHardReset(t *testing.T) {
+    tempDir := t.TempDir()
+    testConfigDir := filepath.Join(tempDir, "anyagent")
 
-	params := &InitParams{
-		ProjectName:        "test-project",
-		ProjectDescription: "A test project for anyagent",
-		ProjectDir:         tempDir,
-		DynamicParameters: map[string]string{
-			"PROJECT_NAME":        "test-project",
-			"PROJECT_DESCRIPTION": "A test project for anyagent",
-			"PRIMARY_LANGUAGE":    "Go",
-			"TEAM_NAME":           "Development Team",
-		},
-	}
+    // First, create an existing environment
+    err := setupCompleteConfig(testConfigDir)
+    if err != nil {
+        t.Fatalf("Failed to setup initial config: %v", err)
+    }
 
-	// Test dry run
-	err = createAgentsFile(params, true)
-	if err != nil {
-		t.Errorf("Dry run failed: %v", err)
-	}
+    // Modify one of the template files to test hard reset
+    templatesDir := filepath.Join(testConfigDir, "templates")
+    modifiedTemplate := filepath.Join(templatesDir, "AGENTS.md.tmpl")
+    err = os.WriteFile(modifiedTemplate, []byte("# Modified template"), 0644)
+    if err != nil {
+        t.Fatalf("Failed to modify template: %v", err)
+    }
 
-	// Verify file doesn't exist after dry run
-	agentsPath := filepath.Join(tempDir, "AGENTS.md")
-	if _, err := os.Stat(agentsPath); !os.IsNotExist(err) {
-		t.Errorf("AGENTS.md should not exist after dry run")
-	}
+    // Perform hard reset
+    err = RunEditTemplate(testConfigDir, true, true) // dryRun = true, hardReset = true
+    if err != nil {
+        t.Errorf("RunEditTemplate() with hard reset failed: %v", err)
+    }
 
-	// Test actual creation
-	err = createAgentsFile(params, false)
-	if err != nil {
-		t.Errorf("File creation failed: %v", err)
-	}
+    // Verify the template was reset to original
+    content, err := os.ReadFile(modifiedTemplate)
+    if err != nil {
+        t.Fatalf("Failed to read template after reset: %v", err)
+    }
 
-	// Verify file exists and contains expected content
-	if _, err := os.Stat(agentsPath); os.IsNotExist(err) {
-		t.Errorf("AGENTS.md was not created")
-	}
+    // Check that the content is no longer the modified version
+    if strings.Contains(string(content), "# Modified template") {
+        t.Errorf("Hard reset did not restore original template content")
+    }
 
-	content, err := os.ReadFile(agentsPath)
-	if err != nil {
-		t.Errorf("Failed to read AGENTS.md: %v", err)
-	}
-
-	contentStr := string(content)
-	if !strings.Contains(contentStr, "test-project") {
-		t.Errorf("AGENTS.md does not contain project name")
-	}
-	if !strings.Contains(contentStr, "A test project for anyagent") {
-		t.Errorf("AGENTS.md does not contain project description")
-	}
+    // Verify all components are still present
+    verifyTemplateEnvironment(t, testConfigDir)
 }
 
-func TestCreateAgentSymlinks(t *testing.T) {
-	// Create a temporary directory for testing
-	tempDir, err := os.MkdirTemp("", "test_symlinks_*")
-	if err != nil {
-		t.Fatalf("Failed to create temp directory: %v", err)
-	}
-	defer os.RemoveAll(tempDir)
+// TestValidateTemplateEnvironment tests template environment validation
+func TestValidateTemplateEnvironment(t *testing.T) {
+    tempDir := t.TempDir()
 
-	// Create AGENTS.md file first
-	agentsPath := filepath.Join(tempDir, "AGENTS.md")
-	err = os.WriteFile(agentsPath, []byte("test content"), 0644)
-	if err != nil {
-		t.Fatalf("Failed to create AGENTS.md: %v", err)
-	}
+    tests := []struct {
+        name      string
+        setupFunc func(string) error
+        configDir string
+        wantValid bool
+    }{
+        {
+            name: "valid template environment",
+            setupFunc: func(dir string) error {
+                return setupCompleteConfig(dir)
+            },
+            configDir: filepath.Join(tempDir, "valid"),
+            wantValid: true,
+        },
+        {
+            name: "missing template files",
+            setupFunc: func(dir string) error {
+                return config.CreateUserConfigDir(dir) // Only create directory
+            },
+            configDir: filepath.Join(tempDir, "incomplete"),
+            wantValid: false,
+        },
+        {
+            name: "non-existent directory",
+            setupFunc: func(dir string) error {
+                return nil // Don't create anything
+            },
+            configDir: filepath.Join(tempDir, "nonexistent"),
+            wantValid: false,
+        },
+    }
 
-	params := &InitParams{
-		ProjectName:        "test-project",
-		ProjectDescription: "A test project",
-		ProjectDir:         tempDir,
-		DynamicParameters: map[string]string{
-			"PROJECT_NAME":        "test-project",
-			"PROJECT_DESCRIPTION": "A test project",
-			"PRIMARY_LANGUAGE":    "Go",
-			"TEAM_NAME":           "Development Team",
-		},
-		SelectedAgents: []AIAgent{
-			{
-				Name:         "copilot",
-				DisplayName:  "GitHub Copilot",
-				ConfigPath:   ".github/copilot-instructions.md",
-				NeedsSymlink: true,
-			},
-		},
-	}
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+            err := tt.setupFunc(tt.configDir)
+            if err != nil {
+                t.Fatalf("Setup failed: %v", err)
+            }
 
-	// Test dry run
-	err = createAgentSymlinks(params, true)
-	if err != nil {
-		t.Errorf("Dry run failed: %v", err)
-	}
+            valid := ValidateTemplateEnvironment(tt.configDir)
+            if valid != tt.wantValid {
+                t.Errorf("ValidateTemplateEnvironment() = %v, want %v", valid, tt.wantValid)
+            }
+        })
+    }
+}
 
-	// Test actual creation
-	err = createAgentSymlinks(params, false)
-	if err != nil {
-		t.Errorf("Symlink creation failed: %v", err)
-	}
+// TestLaunchVSCode tests VSCode launching functionality (dry run)
+func TestLaunchVSCode(t *testing.T) {
+    tempDir := t.TempDir()
+    testConfigDir := filepath.Join(tempDir, "anyagent")
 
-	// Verify symlink was created
-	symlinkPath := filepath.Join(tempDir, ".github", "copilot-instructions.md")
-	if _, err := os.Lstat(symlinkPath); os.IsNotExist(err) {
-		t.Errorf("Symlink was not created")
-	}
+    // Setup a complete configuration
+    err := setupCompleteConfig(testConfigDir)
+    if err != nil {
+        t.Fatalf("Failed to setup config: %v", err)
+    }
 
-	// Verify it's actually a symlink
-	linkTarget, err := os.Readlink(symlinkPath)
-	if err != nil {
-		t.Errorf("Failed to read symlink: %v", err)
-	}
+    tests := []struct {
+        name      string
+        configDir string
+        dryRun    bool
+        wantErr   bool
+    }{
+        {
+            name:      "launch VSCode dry run",
+            configDir: testConfigDir,
+            dryRun:    true,
+            wantErr:   false,
+        },
+    }
 
-	expectedTarget := "../AGENTS.md"
-	if linkTarget != expectedTarget {
-		t.Errorf("Expected symlink target %s, got %s", expectedTarget, linkTarget)
-	}
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+            err := LaunchVSCode(tt.configDir, tt.dryRun)
+            if (err != nil) != tt.wantErr {
+                t.Errorf("LaunchVSCode() error = %v, wantErr %v", err, tt.wantErr)
+            }
+        })
+    }
+}
+
+// --- test helpers -----------------------------------------------------------
+
+func setupExistingConfig(dir string) error {
+    if err := config.CreateUserConfigDir(dir); err != nil {
+        return err
+    }
+    // Leave the rest incomplete to trigger update path
+    return nil
+}
+
+func setupCompleteConfig(dir string) error {
+    if err := config.CreateUserConfigDir(dir); err != nil {
+        return err
+    }
+    if err := config.CreateTemplateStructure(dir); err != nil {
+        return err
+    }
+    if err := config.CreateTemplateFiles(dir); err != nil {
+        return err
+    }
+    if err := config.CreateAnyagentProject(dir); err != nil {
+        return err
+    }
+    return nil
+}
+
+func verifyTemplateEnvironment(t *testing.T, dir string) {
+    t.Helper()
+    if !ValidateTemplateEnvironment(dir) {
+        t.Fatalf("template environment is not valid at %s", dir)
+    }
 }

@@ -46,13 +46,13 @@ anyagent list command
 
 ### 初期化/同期/切替
 ```bash
-anyagent init                       # テンプレート編集環境を起動（ユーザー設定側）
-anyagent sync [directory]           # プロジェクトを初期化/同期（.anyagent/ を配布し AGENTS.md を生成）
+anyagent init                       # ユーザー側テンプレート (~/.anyagent) を準備して VSCode で開く
+anyagent sync [directory]           # ユーザーテンプレートからプロジェクトを初期化/同期
 anyagent switch <agent>             # 有効エージェントを切替（リンク/コマンドを再整備）
 
 # オプション
 #   --force, -f   sync 時に既存の .anyagent/ を上書き再配布
-#   --dry-run, -n 実行内容のみ表示
+#   --dry-run, -n 実行内容のみ表示（不足プレースホルダは一覧表示のみ）
 ```
 
 ### ルール管理
@@ -129,6 +129,11 @@ mcp_servers:
 ### 統合設定 (`AGENTS.md`)
 - `{{EXTRA_RULES}}` にインストール済み extra_rules の本文を連結して注入
 - Codex など単一ファイル参照のエージェントはこの領域を使用
+
+#### プレースホルダの解決
+- `sync`/`add rule`/`remove rule` 実行時、テンプレートに未設定の `{{PLACEHOLDER}}` があれば対話で入力を促し、`.anyagent/config.yaml` に保存します。
+- `--dry-run` では不足項目を表示するだけで保存しません。
+- 特殊プレースホルダ `{{EXTRA_RULES}}` は自動で extra_rules の内容に置換され、入力対象ではありません。
 
 <!-- プロジェクト構造はエージェントごとに異なるため省略。各エージェントの項目を参照してください。 -->
 

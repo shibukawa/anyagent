@@ -1,10 +1,10 @@
 package commands
 
 import (
-	"fmt"
-	"os"
-	"path/filepath"
-	"strings"
+    "fmt"
+    "os"
+    "path/filepath"
+    "strings"
 
 	"github.com/shibukawa/anyagent/internal/config"
 )
@@ -50,11 +50,11 @@ func RunAddRule(language, projectDir string, dryRun bool) error {
 		return fmt.Errorf("unsupported language: %s. Supported: %s", language, strings.Join(SupportedRules, ", "))
 	}
 
-	// Get the rule template content
-	ruleContent, err := getRuleTemplate(normalizedLanguage)
-	if err != nil {
-		return fmt.Errorf("failed to get rule template: %w", err)
-	}
+    // Get the rule template content with precedence (project → user → embedded)
+    ruleContent, err := getRuleTemplate(projectDir, normalizedLanguage)
+    if err != nil {
+        return fmt.Errorf("failed to get rule template: %w", err)
+    }
 
 	// Create external rule files for agent-specific locations
 	if shouldCreateCopilotRuleFiles(projectDir) {
@@ -124,21 +124,39 @@ func validateAndNormalizeLanguage(language string) (string, error) {
 }
 
 // getRuleTemplate retrieves the template content for the specified language
-func getRuleTemplate(language string) (string, error) {
-	switch language {
-	case "go":
-		return config.GetGoExtraRuleTemplate(), nil
-	case "typescript":
-		return config.GetTSExtraRuleTemplate(), nil
-	case "docker":
-		return config.GetDockerExtraRuleTemplate(), nil
-	case "python":
-		return config.GetPythonExtraRuleTemplate(), nil
-	case "react":
-		return config.GetReactExtraRuleTemplate(), nil
-	default:
-		return "", fmt.Errorf("template not found for language: %s", language)
-	}
+func getRuleTemplate(projectDir, language string) (string, error) {
+    // Map to filename
+    filename := ""
+    switch language {
+    case "go":
+        filename = "go.md"
+    case "typescript":
+        filename = "ts.md"
+    case "docker":
+        filename = "docker.md"
+    case "python":
+        filename = "python.md"
+    case "react":
+        filename = "react.md"
+    default:
+        return "", fmt.Errorf("template not found for language: %s", language)
+    }
+    // Resolve using precedence; fallback to embedded per language
+    return config.ResolveTemplateContent(projectDir, filepath.Join("extra_rules", filename), func() (string, error) {
+        switch language {
+        case "go":
+            return config.GetGoExtraRuleTemplate(), nil
+        case "typescript":
+            return config.GetTSExtraRuleTemplate(), nil
+        case "docker":
+            return config.GetDockerExtraRuleTemplate(), nil
+        case "python":
+            return config.GetPythonExtraRuleTemplate(), nil
+        case "react":
+            return config.GetReactExtraRuleTemplate(), nil
+        }
+        return "", fmt.Errorf("template not found for language: %s", language)
+    })
 }
 
 // createInstructionsDirectory creates the .github/instructions directory
@@ -201,6 +219,9 @@ func updateProjectConfigAndRegenerate(projectDir, rule string) error {
 		return fmt.Errorf("failed to save project config: %w", err)
 	}
 
-	// Regenerate AGENTS.md at the specified project directory
-	return projectConfig.RegenerateAgentsFileAt(projectDir)
+    // Ensure template parameters, then regenerate AGENTS.md at the specified project directory
+    if err := ensureTemplateParameters(projectDir, projectConfig, false); err != nil {
+        return fmt.Errorf("failed to resolve template parameters: %w", err)
+    }
+    return projectConfig.RegenerateAgentsFileAt(projectDir)
 }

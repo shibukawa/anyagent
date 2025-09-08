@@ -45,13 +45,13 @@ anyagent list command
 ## Init / Sync / Switch
 
 ```bash
-anyagent init                       # Launch template editing env (user side)
-anyagent sync [directory]           # Distribute .anyagent/ and generate AGENTS.md
+anyagent init                       # Prepare user templates (~/.anyagent) and open in VSCode
+anyagent sync [directory]           # Initialize/sync a project from user templates
 anyagent switch <agent>             # Switch active agent (links/commands refreshed)
 
 # Options
 #   --force, -f   Overwrite existing .anyagent/ on sync
-#   --dry-run, -n Preview actions only
+#   --dry-run, -n Preview actions only (list missing placeholders)
 ```
 
 ## Rule Management
@@ -134,6 +134,11 @@ mcp_servers:
 - Project info and rules
 - Injects concatenated extra rules at `{{EXTRA_RULES}}`
 - Agents like Codex read this single file directly
+
+#### Placeholder Resolution
+- During `sync`/`add rule`/`remove rule`, if the template contains unresolved `{{PLACEHOLDER}}` keys, anyagent interactively asks for values and saves them to `.anyagent/config.yaml`.
+- With `--dry-run`, it only lists missing keys and does not save.
+- Special placeholder `{{EXTRA_RULES}}` is auto‑filled and never prompted.
 
 ## Development
 

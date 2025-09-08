@@ -35,16 +35,11 @@ func RunAddCommand(command, projectDir string, dryRun bool, global bool) error {
 		return fmt.Errorf("project is not initialized with anyagent. Run 'anyagent sync' first")
 	}
 
-	// Validate command name
-	if err := validateCommand(command); err != nil {
-		return err
-	}
-
-	// Get the command template content
-	commandContent, err := getCommandTemplate(command)
-	if err != nil {
-		return fmt.Errorf("failed to get command template: %w", err)
-	}
+    // Resolve the command template content with precedence (project → user → embedded)
+    commandContent, err := config.GetCommandTemplateResolved(projectDir, command)
+    if err != nil {
+        return fmt.Errorf("failed to get command template: %w", err)
+    }
 
 	// Create Copilot prompt if Copilot is selected (or no config present)
 	if shouldCreateCopilotCommandFiles(projectDir) {
@@ -199,9 +194,7 @@ func validateCommand(command string) error {
 }
 
 // getCommandTemplate retrieves the template content for the specified command
-func getCommandTemplate(command string) (string, error) {
-	return config.GetCommandTemplate(command)
-}
+func getCommandTemplate(command string) (string, error) { return config.GetCommandTemplate(command) }
 
 // addInstalledCommandToConfig records the installed command into .anyagent.yaml
 func addInstalledCommandToConfig(projectDir, command string, dryRun bool) error {
