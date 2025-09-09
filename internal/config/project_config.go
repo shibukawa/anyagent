@@ -1,10 +1,10 @@
 package config
 
 import (
-    "fmt"
-    "os"
-    "path/filepath"
-    "strings"
+	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 )
@@ -98,10 +98,10 @@ func GetProjectConfigPath(projectDir string) string {
 
 // RegenerateAgentsFile regenerates AGENTS.md with current project configuration
 func (c *ProjectConfig) RegenerateAgentsFile() error {
-    // Get the template
-    agentsTemplate, _ := ResolveTemplateContent("", "AGENTS.md.tmpl", func() (string, error) {
-        return GetAGENTSTemplate(), nil
-    })
+	// Get the template
+	agentsTemplate, _ := ResolveTemplateContent("", "AGENTS.md.tmpl", func() (string, error) {
+		return GetAGENTSTemplate(), nil
+	})
 
 	// Prepare parameters map ensuring required keys are present
 	params := map[string]string{}
@@ -120,13 +120,13 @@ func (c *ProjectConfig) RegenerateAgentsFile() error {
 
 	// Collect and inject extra rule content
 	var extraRules []string
-    for _, rule := range c.InstalledRules {
-        contentRule, err := getRuleTemplateContent("", rule)
-        if err != nil {
-            return fmt.Errorf("failed to get content for rule %s: %w", rule, err)
-        }
-        extraRules = append(extraRules, contentRule)
-    }
+	for _, rule := range c.InstalledRules {
+		contentRule, err := getRuleTemplateContent("", rule)
+		if err != nil {
+			return fmt.Errorf("failed to get content for rule %s: %w", rule, err)
+		}
+		extraRules = append(extraRules, contentRule)
+	}
 	extraRulesContent := strings.Join(extraRules, "\n\n")
 	content = strings.Replace(content, "{{EXTRA_RULES}}", extraRulesContent, 1)
 
@@ -146,11 +146,11 @@ func (c *ProjectConfig) RegenerateAgentsFileAt(projectDir string) error {
 
 // getRuleTemplateContent gets the content for a specific rule
 func getRuleTemplateContent(projectDir string, rule string) (string, error) {
-    // Map rule to filename
-    filename := ""
-    switch rule {
-    case "go":
-        filename = "go.md"
+	// Map rule to filename
+	filename := ""
+	switch rule {
+	case "go":
+		filename = "go.md"
 	case "typescript":
 		filename = "ts.md"
 	case "docker":
@@ -162,21 +162,21 @@ func getRuleTemplateContent(projectDir string, rule string) (string, error) {
 	default:
 		return "", fmt.Errorf("unknown rule: %s", rule)
 	}
-    // Resolve using precedence via ResolveTemplateContent
-    content, err := ResolveTemplateContent(projectDir, filepath.Join("extra_rules", filename), func() (string, error) {
-        switch rule {
-        case "go":
-            return GetGoExtraRuleTemplate(), nil
-        case "typescript":
-            return GetTSExtraRuleTemplate(), nil
-        case "docker":
-            return GetDockerExtraRuleTemplate(), nil
-        case "python":
-            return GetPythonExtraRuleTemplate(), nil
-        case "react":
-            return GetReactExtraRuleTemplate(), nil
-        }
-        return "", fmt.Errorf("unknown rule: %s", rule)
-    })
-    return content, err
+	// Resolve using precedence via ResolveTemplateContent
+	content, err := ResolveTemplateContent(projectDir, filepath.Join("extra_rules", filename), func() (string, error) {
+		switch rule {
+		case "go":
+			return GetGoExtraRuleTemplate(), nil
+		case "typescript":
+			return GetTSExtraRuleTemplate(), nil
+		case "docker":
+			return GetDockerExtraRuleTemplate(), nil
+		case "python":
+			return GetPythonExtraRuleTemplate(), nil
+		case "react":
+			return GetReactExtraRuleTemplate(), nil
+		}
+		return "", fmt.Errorf("unknown rule: %s", rule)
+	})
+	return content, err
 }

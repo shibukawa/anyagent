@@ -1,12 +1,12 @@
 package config
 
 import (
-    "embed"
-    "fmt"
-    "io/fs"
-    "os"
-    "path/filepath"
-    "strings"
+	"embed"
+	"fmt"
+	"io/fs"
+	"os"
+	"path/filepath"
+	"strings"
 )
 
 //go:embed configsrc/templates/commands/*
@@ -14,12 +14,12 @@ var commandsFS embed.FS
 
 // GetCommandTemplate retrieves the template content for the specified command
 func GetCommandTemplate(command string) (string, error) {
-    fileName := fmt.Sprintf("configsrc/templates/commands/%s.md", command)
-    content, err := commandsFS.ReadFile(fileName)
-    if err != nil {
-        return "", fmt.Errorf("command template not found: %s", command)
-    }
-    return string(content), nil
+	fileName := fmt.Sprintf("configsrc/templates/commands/%s.md", command)
+	content, err := commandsFS.ReadFile(fileName)
+	if err != nil {
+		return "", fmt.Errorf("command template not found: %s", command)
+	}
+	return string(content), nil
 }
 
 // ResolveTemplateContent reads a template with precedence:
@@ -27,45 +27,45 @@ func GetCommandTemplate(command string) (string, error) {
 // 2) <userConfigDir>/templates/<relPath>
 // 3) embeddedFallback()
 func ResolveTemplateContent(projectDir string, relPath string, embeddedFallback func() (string, error)) (string, error) {
-    // Determine project base
-    base := projectDir
-    if base == "" {
-        if wd, err := os.Getwd(); err == nil {
-            base = wd
-        }
-    }
-    // Project override
-    if base != "" {
-        if b, err := os.ReadFile(filepath.Join(base, ".anyagent", relPath)); err == nil {
-            return string(b), nil
-        }
-    }
-    // User override
-    if userDir, err := GetUserConfigDir(); err == nil {
-        if b, err := os.ReadFile(filepath.Join(userDir, "templates", relPath)); err == nil {
-            return string(b), nil
-        }
-    }
-    // Embedded fallback
-    return embeddedFallback()
+	// Determine project base
+	base := projectDir
+	if base == "" {
+		if wd, err := os.Getwd(); err == nil {
+			base = wd
+		}
+	}
+	// Project override
+	if base != "" {
+		if b, err := os.ReadFile(filepath.Join(base, ".anyagent", relPath)); err == nil {
+			return string(b), nil
+		}
+	}
+	// User override
+	if userDir, err := GetUserConfigDir(); err == nil {
+		if b, err := os.ReadFile(filepath.Join(userDir, "templates", relPath)); err == nil {
+			return string(b), nil
+		}
+	}
+	// Embedded fallback
+	return embeddedFallback()
 }
 
 // GetCommandTemplateResolved resolves a command template using standard precedence.
 func GetCommandTemplateResolved(projectDir, command string) (string, error) {
-    rel := filepath.Join("commands", fmt.Sprintf("%s.md", command))
-    return ResolveTemplateContent(projectDir, rel, func() (string, error) {
-        return GetCommandTemplate(command)
-    })
+	rel := filepath.Join("commands", fmt.Sprintf("%s.md", command))
+	return ResolveTemplateContent(projectDir, rel, func() (string, error) {
+		return GetCommandTemplate(command)
+	})
 }
 
 // GetAvailableCommands returns a list of available command templates
 func GetAvailableCommands() ([]string, error) {
-    var commands []string
+	var commands []string
 
-    entries, err := fs.ReadDir(commandsFS, "configsrc/templates/commands")
-    if err != nil {
-        return nil, fmt.Errorf("failed to read commands directory: %w", err)
-    }
+	entries, err := fs.ReadDir(commandsFS, "configsrc/templates/commands")
+	if err != nil {
+		return nil, fmt.Errorf("failed to read commands directory: %w", err)
+	}
 
 	for _, entry := range entries {
 		if !entry.IsDir() && strings.HasSuffix(entry.Name(), ".md") {

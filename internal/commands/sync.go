@@ -63,7 +63,7 @@ type InitParams struct {
 
 // RunFirstSync executes the initial project sync functionality
 func RunFirstSync(projectDir string, agentNames []string, dryRun bool) error {
-    return RunFirstSyncWithParams(projectDir, agentNames, "", "", dryRun)
+	return RunFirstSyncWithParams(projectDir, agentNames, "", "", dryRun)
 }
 
 // RunFirstSyncWithParams executes the initial sync with predefined parameters (for testing)
@@ -108,66 +108,66 @@ func RunFirstSyncWithParams(projectDir string, agentNames []string, projectName,
 		params.SelectedAgents = selectedAgents
 	}
 
-    // Get basic project parameters (name, description)
-    if projectName != "" && projectDesc != "" {
-        params.ProjectName = projectName
-        params.ProjectDescription = projectDesc
-    } else {
-        if err := getProjectParameters(params); err != nil {
-            return fmt.Errorf("failed to get project parameters: %w", err)
-        }
-    }
+	// Get basic project parameters (name, description)
+	if projectName != "" && projectDesc != "" {
+		params.ProjectName = projectName
+		params.ProjectDescription = projectDesc
+	} else {
+		if err := getProjectParameters(params); err != nil {
+			return fmt.Errorf("failed to get project parameters: %w", err)
+		}
+	}
 
-    // Build initial project config with basic parameters and selected agent
-    var agentNamesOnly []string
-    for _, a := range params.SelectedAgents {
-        agentNamesOnly = append(agentNamesOnly, a.Name)
-    }
-    pc := &config.ProjectConfig{
-        ProjectName:        params.ProjectName,
-        ProjectDescription: params.ProjectDescription,
-        InstalledRules:     []string{},
-        InstalledCommands:  []string{},
-        EnabledAgents:      agentNamesOnly,
-        Parameters: map[string]string{
-            "PROJECT_NAME":        params.ProjectName,
-            "PROJECT_DESCRIPTION": params.ProjectDescription,
-        },
-    }
+	// Build initial project config with basic parameters and selected agent
+	var agentNamesOnly []string
+	for _, a := range params.SelectedAgents {
+		agentNamesOnly = append(agentNamesOnly, a.Name)
+	}
+	pc := &config.ProjectConfig{
+		ProjectName:        params.ProjectName,
+		ProjectDescription: params.ProjectDescription,
+		InstalledRules:     []string{},
+		InstalledCommands:  []string{},
+		EnabledAgents:      agentNamesOnly,
+		Parameters: map[string]string{
+			"PROJECT_NAME":        params.ProjectName,
+			"PROJECT_DESCRIPTION": params.ProjectDescription,
+		},
+	}
 
-    // Prompt for additional template parameters (excluding PROJECT_* and EXTRA_RULES)
-    if err := ensureTemplateParameters(projectDir, pc, dryRun); err != nil {
-        return fmt.Errorf("failed to resolve template parameters: %w", err)
-    }
+	// Prompt for additional template parameters (excluding PROJECT_* and EXTRA_RULES)
+	if err := ensureTemplateParameters(projectDir, pc, dryRun); err != nil {
+		return fmt.Errorf("failed to resolve template parameters: %w", err)
+	}
 
-    // Distribute user templates to .anyagent after inputs are collected
-    if err := ensureProjectAnyagentTemplates(projectDir, dryRun, false); err != nil {
-        return fmt.Errorf("failed to ensure .anyagent templates: %w", err)
-    }
+	// Distribute user templates to .anyagent after inputs are collected
+	if err := ensureProjectAnyagentTemplates(projectDir, dryRun, false); err != nil {
+		return fmt.Errorf("failed to ensure .anyagent templates: %w", err)
+	}
 
-    // Generate AGENTS.md from latest template and parameters
-    if dryRun {
-        fmt.Printf("[DRY RUN] Would generate AGENTS.md using collected parameters and rules\n")
-    } else {
-        if err := pc.RegenerateAgentsFileAt(projectDir); err != nil {
-            return fmt.Errorf("failed to generate AGENTS.md: %w", err)
-        }
-    }
+	// Generate AGENTS.md from latest template and parameters
+	if dryRun {
+		fmt.Printf("[DRY RUN] Would generate AGENTS.md using collected parameters and rules\n")
+	} else {
+		if err := pc.RegenerateAgentsFileAt(projectDir); err != nil {
+			return fmt.Errorf("failed to generate AGENTS.md: %w", err)
+		}
+	}
 
-    // Create symlinks for selected agents
-    if err := createAgentSymlinks(&InitParams{ProjectDir: projectDir, SelectedAgents: params.SelectedAgents}, dryRun); err != nil {
-        return fmt.Errorf("failed to create agent symlinks: %w", err)
-    }
+	// Create symlinks for selected agents
+	if err := createAgentSymlinks(&InitParams{ProjectDir: projectDir, SelectedAgents: params.SelectedAgents}, dryRun); err != nil {
+		return fmt.Errorf("failed to create agent symlinks: %w", err)
+	}
 
-    // Persist final project configuration
-    if !dryRun {
-        if err := config.SaveProjectConfig(projectDir, pc); err != nil {
-            return fmt.Errorf("failed to save project configuration: %w", err)
-        }
-    }
+	// Persist final project configuration
+	if !dryRun {
+		if err := config.SaveProjectConfig(projectDir, pc); err != nil {
+			return fmt.Errorf("failed to save project configuration: %w", err)
+		}
+	}
 
-    fmt.Printf("✅ Project initialization completed successfully\n")
-    return nil
+	fmt.Printf("✅ Project initialization completed successfully\n")
+	return nil
 }
 
 // RunSync executes the sync command functionality
@@ -200,12 +200,12 @@ func RunSyncWithOptions(projectDir string, agentNames []string, dryRun bool, for
 		return fmt.Errorf("failed to load project config: %w", err)
 	}
 
-    // If AGENTS.md doesn't exist, treat as first-time initialization
-    agentsPath := filepath.Join(projectDir, "AGENTS.md")
-    if _, err := os.Stat(agentsPath); os.IsNotExist(err) && len(projectConfig.Parameters) == 0 && projectConfig.ProjectName == "" {
-        // Fallback to init flow
-        return RunFirstSync(projectDir, agentNames, dryRun)
-    }
+	// If AGENTS.md doesn't exist, treat as first-time initialization
+	agentsPath := filepath.Join(projectDir, "AGENTS.md")
+	if _, err := os.Stat(agentsPath); os.IsNotExist(err) && len(projectConfig.Parameters) == 0 && projectConfig.ProjectName == "" {
+		// Fallback to init flow
+		return RunFirstSync(projectDir, agentNames, dryRun)
+	}
 
 	// Determine new selection of agents
 	var selectedAgents []AIAgent
@@ -258,27 +258,27 @@ func RunSyncWithOptions(projectDir string, agentNames []string, dryRun bool, for
 		}
 	}
 
-    // Before regeneration, ensure all required template parameters are present
-    if err := ensureTemplateParameters(projectDir, projectConfig, dryRun); err != nil {
-        return fmt.Errorf("failed to resolve template parameters: %w", err)
-    }
+	// Before regeneration, ensure all required template parameters are present
+	if err := ensureTemplateParameters(projectDir, projectConfig, dryRun); err != nil {
+		return fmt.Errorf("failed to resolve template parameters: %w", err)
+	}
 
-    // Distribute user templates only if .anyagent doesn't exist or --force is set
-    if _, stErr := os.Stat(filepath.Join(projectDir, ".anyagent")); os.IsNotExist(stErr) || force {
-        if err := ensureProjectAnyagentTemplates(projectDir, dryRun, force); err != nil {
-            return fmt.Errorf("failed to ensure .anyagent templates: %w", err)
-        }
-    }
+	// Distribute user templates only if .anyagent doesn't exist or --force is set
+	if _, stErr := os.Stat(filepath.Join(projectDir, ".anyagent")); os.IsNotExist(stErr) || force {
+		if err := ensureProjectAnyagentTemplates(projectDir, dryRun, force); err != nil {
+			return fmt.Errorf("failed to ensure .anyagent templates: %w", err)
+		}
+	}
 
-    // Regenerate AGENTS.md using stored parameters and rules (prefers .anyagent templates)
-    if dryRun {
-        fmt.Printf("[DRY RUN] Would regenerate AGENTS.md using stored parameters and rules\n")
-    } else {
-        if err := projectConfig.RegenerateAgentsFileAt(projectDir); err != nil {
-            return fmt.Errorf("failed to regenerate AGENTS.md: %w", err)
-        }
-        fmt.Printf("📄 AGENTS.md regenerated from latest template\n")
-    }
+	// Regenerate AGENTS.md using stored parameters and rules (prefers .anyagent templates)
+	if dryRun {
+		fmt.Printf("[DRY RUN] Would regenerate AGENTS.md using stored parameters and rules\n")
+	} else {
+		if err := projectConfig.RegenerateAgentsFileAt(projectDir); err != nil {
+			return fmt.Errorf("failed to regenerate AGENTS.md: %w", err)
+		}
+		fmt.Printf("📄 AGENTS.md regenerated from latest template\n")
+	}
 
 	// Recreate symlinks for selected agents
 	if err := createAgentSymlinks(&InitParams{ProjectDir: projectDir, SelectedAgents: selectedAgents}, dryRun); err != nil {
@@ -309,25 +309,14 @@ func RunSyncWithOptions(projectDir string, agentNames []string, dryRun bool, for
 // ensureProjectAnyagentTemplates copies user templates to project .anyagent on first sync
 func ensureProjectAnyagentTemplates(projectDir string, dryRun bool, force bool) error {
 	target := filepath.Join(projectDir, ".anyagent")
-	if st, err := os.Stat(target); err == nil && st.IsDir() {
-		if !force {
-			return fmt.Errorf(".anyagent already exists. Re-run with --force to overwrite")
-		}
-		if dryRun {
-			fmt.Printf("[DRY RUN] Would overwrite existing %s\n", target)
-		} else {
-			if err := os.RemoveAll(target); err != nil {
-				return fmt.Errorf("failed to remove existing .anyagent: %w", err)
-			}
-		}
-	}
+
 	userDir, err := config.GetUserConfigDir()
 	if err != nil {
 		return fmt.Errorf("failed to get user config dir: %w", err)
 	}
 	src := filepath.Join(userDir, "templates")
 	if _, err := os.Stat(src); os.IsNotExist(err) {
-		// If user templates aren't present, set them up
+		// Ensure user templates exist
 		if err := config.CreateTemplateStructure(userDir); err != nil {
 			return fmt.Errorf("failed to create template structure: %w", err)
 		}
@@ -335,6 +324,30 @@ func ensureProjectAnyagentTemplates(projectDir string, dryRun bool, force bool) 
 			return fmt.Errorf("failed to create template files: %w", err)
 		}
 	}
+
+	if st, err := os.Stat(target); err == nil && st.IsDir() {
+		// .anyagent already exists
+		if force {
+			if dryRun {
+				fmt.Printf("[DRY RUN] Would overwrite existing %s with templates from %s\n", target, src)
+				return nil
+			}
+			if err := os.RemoveAll(target); err != nil {
+				return fmt.Errorf("failed to remove existing .anyagent: %w", err)
+			}
+			fmt.Printf("📁 Re-copying templates to project .anyagent (force)...\n")
+			return copyDir(src, target)
+		}
+		// Non-destructive update: add only missing files
+		if dryRun {
+			fmt.Printf("[DRY RUN] Would add missing templates from %s into existing %s\n", src, target)
+			return nil
+		}
+		fmt.Printf("📁 Updating existing .anyagent with any missing templates...\n")
+		return copyDirIfMissing(src, target)
+	}
+
+	// Not exists: initial copy
 	if dryRun {
 		fmt.Printf("[DRY RUN] Would copy templates from %s to %s\n", src, target)
 		return nil
@@ -363,6 +376,33 @@ func copyDir(src, dst string) error {
 			return err
 		}
 		return os.WriteFile(target, data, 0644)
+	})
+}
+
+// copyDirIfMissing copies files from src to dst only if they don't already exist in dst.
+func copyDirIfMissing(src, dst string) error {
+	return filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		rel, err := filepath.Rel(src, path)
+		if err != nil {
+			return err
+		}
+		target := filepath.Join(dst, rel)
+		if info.IsDir() {
+			// ensure directory exists
+			return os.MkdirAll(target, 0755)
+		}
+		if _, err := os.Stat(target); os.IsNotExist(err) {
+			data, err := os.ReadFile(path)
+			if err != nil {
+				return err
+			}
+			return os.WriteFile(target, data, 0644)
+		}
+		// keep existing file
+		return nil
 	})
 }
 
@@ -699,43 +739,43 @@ func validateAgentNames(agentNames []string) ([]AIAgent, error) {
 
 // selectAgentsWizard runs an interactive wizard to select AI agents
 func selectAgentsWizard() ([]AIAgent, error) {
-    reader := bufio.NewReader(os.Stdin)
-    for {
-        fmt.Printf("\nSelect one AI agent to configure (enter number or name):\n")
-        for i, agent := range SupportedAgents {
-            fmt.Printf("  %d. %s (%s)\n", i+1, agent.DisplayName, agent.Name)
-        }
-        fmt.Printf("Enter your selection: ")
+	reader := bufio.NewReader(os.Stdin)
+	for {
+		fmt.Printf("\nSelect one AI agent to configure (enter number or name):\n")
+		for i, agent := range SupportedAgents {
+			fmt.Printf("  %d. %s (%s)\n", i+1, agent.DisplayName, agent.Name)
+		}
+		fmt.Printf("Enter your selection: ")
 
-        input, err := reader.ReadString('\n')
-        if err != nil {
-            return nil, fmt.Errorf("failed to read input: %w", err)
-        }
-        input = strings.TrimSpace(input)
-        if input == "" {
-            fmt.Printf("No selection. Please try again.\n")
-            continue
-        }
+		input, err := reader.ReadString('\n')
+		if err != nil {
+			return nil, fmt.Errorf("failed to read input: %w", err)
+		}
+		input = strings.TrimSpace(input)
+		if input == "" {
+			fmt.Printf("No selection. Please try again.\n")
+			continue
+		}
 
-        // Try numeric index first
-        var index int
-        if _, err := fmt.Sscanf(input, "%d", &index); err == nil {
-            if index >= 1 && index <= len(SupportedAgents) {
-                return []AIAgent{SupportedAgents[index-1]}, nil
-            }
-            fmt.Printf("Selection out of range: %d. Please try again.\n", index)
-            continue
-        }
+		// Try numeric index first
+		var index int
+		if _, err := fmt.Sscanf(input, "%d", &index); err == nil {
+			if index >= 1 && index <= len(SupportedAgents) {
+				return []AIAgent{SupportedAgents[index-1]}, nil
+			}
+			fmt.Printf("Selection out of range: %d. Please try again.\n", index)
+			continue
+		}
 
-        // Try match by agent name (case-insensitive)
-        in := strings.ToLower(input)
-        for _, agent := range SupportedAgents {
-            if in == agent.Name {
-                return []AIAgent{agent}, nil
-            }
-        }
-        fmt.Printf("Unsupported agent: %s. Please try again.\n", input)
-    }
+		// Try match by agent name (case-insensitive)
+		in := strings.ToLower(input)
+		for _, agent := range SupportedAgents {
+			if in == agent.Name {
+				return []AIAgent{agent}, nil
+			}
+		}
+		fmt.Printf("Unsupported agent: %s. Please try again.\n", input)
+	}
 }
 
 // getProjectParameters prompts for project parameters

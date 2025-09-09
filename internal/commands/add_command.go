@@ -35,11 +35,11 @@ func RunAddCommand(command, projectDir string, dryRun bool, global bool) error {
 		return fmt.Errorf("project is not initialized with anyagent. Run 'anyagent sync' first")
 	}
 
-    // Resolve the command template content with precedence (project → user → embedded)
-    commandContent, err := config.GetCommandTemplateResolved(projectDir, command)
-    if err != nil {
-        return fmt.Errorf("failed to get command template: %w", err)
-    }
+	// Resolve the command template content with precedence (project → user → embedded)
+	commandContent, err := config.GetCommandTemplateResolved(projectDir, command)
+	if err != nil {
+		return fmt.Errorf("failed to get command template: %w", err)
+	}
 
 	// Create Copilot prompt if Copilot is selected (or no config present)
 	if shouldCreateCopilotCommandFiles(projectDir) {

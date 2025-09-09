@@ -1,12 +1,12 @@
 package config
 
 import (
-    "embed"
-    "fmt"
-    "io/fs"
-    "os"
-    "path/filepath"
-    "strings"
+	"embed"
+	"fmt"
+	"io/fs"
+	"os"
+	"path/filepath"
+	"strings"
 )
 
 // Embedded template files root (deploy layout)
@@ -49,39 +49,57 @@ func CreateTemplateStructure(baseDir string) error {
 
 // CreateTemplateFiles creates the default template files
 func CreateTemplateFiles(baseDir string) error {
-    return fs.WalkDir(templatesFS, "configsrc", func(path string, d fs.DirEntry, err error) error {
-        if err != nil { return err }
-        if d.IsDir() {
-            // create corresponding directory under baseDir for this entry
-            if path == "configsrc" { return nil }
-            rel := strings.TrimPrefix(path, "configsrc/")
-            return os.MkdirAll(filepath.Join(baseDir, rel), 0755)
-        }
-        b, err := templatesFS.ReadFile(path)
-        if err != nil { return err }
-        rel := path[len("configsrc/"):]
-        outPath := filepath.Join(baseDir, rel)
-        if err := os.MkdirAll(filepath.Dir(outPath), 0755); err != nil { return err }
-        return os.WriteFile(outPath, b, 0644)
-    })
+	return fs.WalkDir(templatesFS, "configsrc", func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			// create corresponding directory under baseDir for this entry
+			if path == "configsrc" {
+				return nil
+			}
+			rel := strings.TrimPrefix(path, "configsrc/")
+			return os.MkdirAll(filepath.Join(baseDir, rel), 0755)
+		}
+		b, err := templatesFS.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		rel := path[len("configsrc/"):]
+		outPath := filepath.Join(baseDir, rel)
+		if err := os.MkdirAll(filepath.Dir(outPath), 0755); err != nil {
+			return err
+		}
+		return os.WriteFile(outPath, b, 0644)
+	})
 }
 
 // CreateTemplateFilesIfMissing creates default template files only when they don't exist.
 // Existing files are preserved and not overwritten.
 func CreateTemplateFilesIfMissing(baseDir string) error {
-    return fs.WalkDir(templatesFS, "configsrc", func(path string, d fs.DirEntry, err error) error {
-        if err != nil { return err }
-        if d.IsDir() { return nil }
-        rel := path[len("configsrc/"):]
-        outPath := filepath.Join(baseDir, rel)
-        if _, err := os.Stat(outPath); os.IsNotExist(err) {
-            if err := os.MkdirAll(filepath.Dir(outPath), 0755); err != nil { return err }
-            b, err := templatesFS.ReadFile(path)
-            if err != nil { return err }
-            if err := os.WriteFile(outPath, b, 0644); err != nil { return err }
-        }
-        return nil
-    })
+	return fs.WalkDir(templatesFS, "configsrc", func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			return nil
+		}
+		rel := path[len("configsrc/"):]
+		outPath := filepath.Join(baseDir, rel)
+		if _, err := os.Stat(outPath); os.IsNotExist(err) {
+			if err := os.MkdirAll(filepath.Dir(outPath), 0755); err != nil {
+				return err
+			}
+			b, err := templatesFS.ReadFile(path)
+			if err != nil {
+				return err
+			}
+			if err := os.WriteFile(outPath, b, 0644); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
 }
 
 // CreateAnyagentProject creates the anyagent configuration project
@@ -157,19 +175,55 @@ func CheckUserConfigExists(dir string) bool {
 
 // Template content functions
 
-func GetAGENTSTemplate() string                     { b, _ := templatesFS.ReadFile("configsrc/templates/AGENTS.md.tmpl"); return string(b) }
-func getMCPTemplate() string                        { b, _ := templatesFS.ReadFile("configsrc/templates/mcp.yaml"); return string(b) }
-func getGeneralCommandsTemplate() string            { b, _ := templatesFS.ReadFile("configsrc/templates/commands/general.md"); return string(b) }
-func getCodingCommandsTemplate() string             { b, _ := templatesFS.ReadFile("configsrc/templates/commands/coding.md"); return string(b) }
-func getProjectSpecificCommandsTemplate() string    { b, _ := templatesFS.ReadFile("configsrc/templates/commands/project-specific.md"); return string(b) }
+func GetAGENTSTemplate() string {
+	b, _ := templatesFS.ReadFile("configsrc/templates/AGENTS.md.tmpl")
+	return string(b)
+}
+func getMCPTemplate() string {
+	b, _ := templatesFS.ReadFile("configsrc/templates/mcp.yaml")
+	return string(b)
+}
+func getGeneralCommandsTemplate() string {
+	b, _ := templatesFS.ReadFile("configsrc/templates/commands/general.md")
+	return string(b)
+}
+func getCodingCommandsTemplate() string {
+	b, _ := templatesFS.ReadFile("configsrc/templates/commands/coding.md")
+	return string(b)
+}
+func getProjectSpecificCommandsTemplate() string {
+	b, _ := templatesFS.ReadFile("configsrc/templates/commands/project-specific.md")
+	return string(b)
+}
 
-func getAnyagentAGENTSContent() string { b, _ := templatesFS.ReadFile("configsrc/anyagent-AGENTS.md"); return string(b) }
-func getReadmeTemplate() string         { b, _ := templatesFS.ReadFile("configsrc/README.md"); return string(b) }
-func getGoRulesTemplate() string        { b, _ := templatesFS.ReadFile("configsrc/templates/extra_rules/go.md"); return string(b) }
-func getTsRulesTemplate() string        { b, _ := templatesFS.ReadFile("configsrc/templates/extra_rules/ts.md"); return string(b) }
-func getDockerRulesTemplate() string    { b, _ := templatesFS.ReadFile("configsrc/templates/extra_rules/docker.md"); return string(b) }
-func getPythonRulesTemplate() string    { b, _ := templatesFS.ReadFile("configsrc/templates/extra_rules/python.md"); return string(b) }
-func getReactRulesTemplate() string     { b, _ := templatesFS.ReadFile("configsrc/templates/extra_rules/react.md"); return string(b) }
+func getAnyagentAGENTSContent() string {
+	b, _ := templatesFS.ReadFile("configsrc/anyagent-AGENTS.md")
+	return string(b)
+}
+func getReadmeTemplate() string {
+	b, _ := templatesFS.ReadFile("configsrc/README.md")
+	return string(b)
+}
+func getGoRulesTemplate() string {
+	b, _ := templatesFS.ReadFile("configsrc/templates/extra_rules/go.md")
+	return string(b)
+}
+func getTsRulesTemplate() string {
+	b, _ := templatesFS.ReadFile("configsrc/templates/extra_rules/ts.md")
+	return string(b)
+}
+func getDockerRulesTemplate() string {
+	b, _ := templatesFS.ReadFile("configsrc/templates/extra_rules/docker.md")
+	return string(b)
+}
+func getPythonRulesTemplate() string {
+	b, _ := templatesFS.ReadFile("configsrc/templates/extra_rules/python.md")
+	return string(b)
+}
+func getReactRulesTemplate() string {
+	b, _ := templatesFS.ReadFile("configsrc/templates/extra_rules/react.md")
+	return string(b)
+}
 
 // Public template getters for external use
 

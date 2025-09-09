@@ -192,9 +192,9 @@ func removeFromProjectConfigAndRegenerate(projectDir, rule string) error {
 		return fmt.Errorf("failed to save project config: %w", err)
 	}
 
-    // Ensure template parameters, then regenerate AGENTS.md at the specified project directory
-    if err := ensureTemplateParameters(projectDir, projectConfig, false); err != nil {
-        return fmt.Errorf("failed to resolve template parameters: %w", err)
-    }
-    return projectConfig.RegenerateAgentsFileAt(projectDir)
+	// Ensure template parameters, then regenerate AGENTS.md at the specified project directory
+	if err := ensureTemplateParameters(projectDir, projectConfig, false); err != nil {
+		return fmt.Errorf("failed to resolve template parameters: %w", err)
+	}
+	return projectConfig.RegenerateAgentsFileAt(projectDir)
 }
