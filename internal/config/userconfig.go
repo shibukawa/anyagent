@@ -1,49 +1,20 @@
 package config
 
 import (
-	_ "embed"
-	"fmt"
-	"os"
-	"path/filepath"
+    "embed"
+    "fmt"
+    "io/fs"
+    "os"
+    "path/filepath"
+    "strings"
 )
 
-// Embedded template files
+// Embedded template files root (deploy layout)
 //
-//go:embed templates/AGENTS.md.tmpl
-var agentsTemplate string
+//go:embed configsrc
+var templatesFS embed.FS
 
-//go:embed templates/mcp.yaml
-var mcpTemplate string
-
-//go:embed templates/general.md
-var generalCommandsTemplate string
-
-//go:embed templates/coding.md
-var codingCommandsTemplate string
-
-//go:embed templates/project-specific.md
-var projectSpecificCommandsTemplate string
-
-//go:embed templates/anyagent-AGENTS.md
-var anyagentAGENTSContent string
-
-//go:embed templates/README.md
-var readmeTemplate string
-
-//go:embed templates/extra_rules/go.md
-var goRulesTemplate string
-
-//go:embed templates/extra_rules/ts.md
-var tsRulesTemplate string
-
-//go:embed templates/extra_rules/docker.md
-var dockerRulesTemplate string
-
-//go:embed templates/extra_rules/python.md
-var pythonRulesTemplate string
-
-//go:embed templates/extra_rules/react.md
-var reactRulesTemplate string
+// (individual file embeds removed; templatesFS now holds the entire tree)
 
 // GetUserConfigDir returns the user configuration directory for anyagent
 func GetUserConfigDir() (string, error) {
@@ -78,28 +49,39 @@ func CreateTemplateStructure(baseDir string) error {
 
 // CreateTemplateFiles creates the default template files
 func CreateTemplateFiles(baseDir string) error {
-	templateFiles := map[string]string{
-		"templates/AGENTS.md.tmpl":               GetAGENTSTemplate(),
-		"templates/mcp.yaml":                     getMCPTemplate(),
-		"templates/commands/general.md":          getGeneralCommandsTemplate(),
-		"templates/commands/coding.md":           getCodingCommandsTemplate(),
-		"templates/commands/project-specific.md": getProjectSpecificCommandsTemplate(),
-		"templates/extra_rules/go.md":            getGoRulesTemplate(),
-		"templates/extra_rules/ts.md":            getTsRulesTemplate(),
-		"templates/extra_rules/docker.md":        getDockerRulesTemplate(),
-		"templates/extra_rules/python.md":        getPythonRulesTemplate(),
-		"templates/extra_rules/react.md":         getReactRulesTemplate(),
-		"README.md":                              getReadmeTemplate(),
-	}
+    return fs.WalkDir(templatesFS, "configsrc", func(path string, d fs.DirEntry, err error) error {
+        if err != nil { return err }
+        if d.IsDir() {
+            // create corresponding directory under baseDir for this entry
+            if path == "configsrc" { return nil }
+            rel := strings.TrimPrefix(path, "configsrc/")
+            return os.MkdirAll(filepath.Join(baseDir, rel), 0755)
+        }
+        b, err := templatesFS.ReadFile(path)
+        if err != nil { return err }
+        rel := path[len("configsrc/"):]
+        outPath := filepath.Join(baseDir, rel)
+        if err := os.MkdirAll(filepath.Dir(outPath), 0755); err != nil { return err }
+        return os.WriteFile(outPath, b, 0644)
+    })
+}
 
-	for filePath, content := range templateFiles {
-		fullPath := filepath.Join(baseDir, filePath)
-		if err := os.WriteFile(fullPath, []byte(content), 0644); err != nil {
-			return err
-		}
-	}
-
-	return nil
+// CreateTemplateFilesIfMissing creates default template files only when they don't exist.
+// Existing files are preserved and not overwritten.
+func CreateTemplateFilesIfMissing(baseDir string) error {
+    return fs.WalkDir(templatesFS, "configsrc", func(path string, d fs.DirEntry, err error) error {
+        if err != nil { return err }
+        if d.IsDir() { return nil }
+        rel := path[len("configsrc/"):]
+        outPath := filepath.Join(baseDir, rel)
+        if _, err := os.Stat(outPath); os.IsNotExist(err) {
+            if err := os.MkdirAll(filepath.Dir(outPath), 0755); err != nil { return err }
+            b, err := templatesFS.ReadFile(path)
+            if err != nil { return err }
+            if err := os.WriteFile(outPath, b, 0644); err != nil { return err }
+        }
+        return nil
+    })
 }
 
 // CreateAnyagentProject creates the anyagent configuration project
@@ -175,77 +157,33 @@ func CheckUserConfigExists(dir string) bool {
 
 // Template content functions
 
-func GetAGENTSTemplate() string {
-	return agentsTemplate
-}
+func GetAGENTSTemplate() string                     { b, _ := templatesFS.ReadFile("configsrc/templates/AGENTS.md.tmpl"); return string(b) }
+func getMCPTemplate() string                        { b, _ := templatesFS.ReadFile("configsrc/templates/mcp.yaml"); return string(b) }
+func getGeneralCommandsTemplate() string            { b, _ := templatesFS.ReadFile("configsrc/templates/commands/general.md"); return string(b) }
+func getCodingCommandsTemplate() string             { b, _ := templatesFS.ReadFile("configsrc/templates/commands/coding.md"); return string(b) }
+func getProjectSpecificCommandsTemplate() string    { b, _ := templatesFS.ReadFile("configsrc/templates/commands/project-specific.md"); return string(b) }
 
-func getMCPTemplate() string {
-	return mcpTemplate
-}
-
-func getGeneralCommandsTemplate() string {
-	return generalCommandsTemplate
-}
-
-func getCodingCommandsTemplate() string {
-	return codingCommandsTemplate
-}
-
-func getProjectSpecificCommandsTemplate() string {
-	return projectSpecificCommandsTemplate
-}
-
-func getAnyagentAGENTSContent() string {
-	return anyagentAGENTSContent
-}
-
-func getReadmeTemplate() string {
-	return readmeTemplate
-}
-
-func getGoRulesTemplate() string {
-	return goRulesTemplate
-}
-
-func getTsRulesTemplate() string {
-	return tsRulesTemplate
-}
-
-func getDockerRulesTemplate() string {
-	return dockerRulesTemplate
-}
-
-func getPythonRulesTemplate() string {
-	return pythonRulesTemplate
-}
-
-func getReactRulesTemplate() string {
-	return reactRulesTemplate
-}
+func getAnyagentAGENTSContent() string { b, _ := templatesFS.ReadFile("configsrc/anyagent-AGENTS.md"); return string(b) }
+func getReadmeTemplate() string         { b, _ := templatesFS.ReadFile("configsrc/README.md"); return string(b) }
+func getGoRulesTemplate() string        { b, _ := templatesFS.ReadFile("configsrc/templates/extra_rules/go.md"); return string(b) }
+func getTsRulesTemplate() string        { b, _ := templatesFS.ReadFile("configsrc/templates/extra_rules/ts.md"); return string(b) }
+func getDockerRulesTemplate() string    { b, _ := templatesFS.ReadFile("configsrc/templates/extra_rules/docker.md"); return string(b) }
+func getPythonRulesTemplate() string    { b, _ := templatesFS.ReadFile("configsrc/templates/extra_rules/python.md"); return string(b) }
+func getReactRulesTemplate() string     { b, _ := templatesFS.ReadFile("configsrc/templates/extra_rules/react.md"); return string(b) }
 
 // Public template getters for external use
 
 // GetGoExtraRuleTemplate returns the Go extra rules template
-func GetGoExtraRuleTemplate() string {
-	return goRulesTemplate
-}
+func GetGoExtraRuleTemplate() string { return getGoRulesTemplate() }
 
 // GetTSExtraRuleTemplate returns the TypeScript extra rules template
-func GetTSExtraRuleTemplate() string {
-	return tsRulesTemplate
-}
+func GetTSExtraRuleTemplate() string { return getTsRulesTemplate() }
 
 // GetDockerExtraRuleTemplate returns the Docker extra rules template
-func GetDockerExtraRuleTemplate() string {
-	return dockerRulesTemplate
-}
+func GetDockerExtraRuleTemplate() string { return getDockerRulesTemplate() }
 
 // GetPythonExtraRuleTemplate returns the Python extra rules template
-func GetPythonExtraRuleTemplate() string {
-	return pythonRulesTemplate
-}
+func GetPythonExtraRuleTemplate() string { return getPythonRulesTemplate() }
 
 // GetReactExtraRuleTemplate returns the React extra rules template
-func GetReactExtraRuleTemplate() string {
-	return reactRulesTemplate
-}
+func GetReactExtraRuleTemplate() string { return getReactRulesTemplate() }

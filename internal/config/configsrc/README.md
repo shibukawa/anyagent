@@ -41,7 +41,6 @@ Welcome to your anyagent template editing environment! This directory contains t
   2. Main markdown body (instructions executed by the assistant)
 
 Example:
-```
 ---
 title: "Create Project README"
 description: "Generate a comprehensive README based on repo content"
@@ -56,7 +55,6 @@ Steps:
 - Inspect top-level files, modules, and main entry points
 - Summarize purpose, setup, usage, and configuration
 - Include examples and common tasks
-```
 
 How anyagent uses it:
 - `anyagent add command <name>`
@@ -95,3 +93,4 @@ Amazon Q Developer integration:
 Gemini integration:
 - Reads `AGENTS.md` directly (no symlink required)
 - Extra rules are merged into `AGENTS.md`
+

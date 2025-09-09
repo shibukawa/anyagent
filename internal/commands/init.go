@@ -222,9 +222,9 @@ func updateTemplateEnvironment(configDir string) error {
         return fmt.Errorf("failed to update template structure: %w", err)
     }
 
-    // Update template files (this will overwrite existing files)
-    if err := config.CreateTemplateFiles(configDir); err != nil {
-        return fmt.Errorf("failed to update template files: %w", err)
+    // Add only missing template files (do not overwrite existing files unless --force)
+    if err := config.CreateTemplateFilesIfMissing(configDir); err != nil {
+        return fmt.Errorf("failed to add missing template files: %w", err)
     }
 
     // Ensure anyagent project configuration exists
@@ -283,4 +283,3 @@ func performHardReset(configDir string) error {
     fmt.Printf("🔄 Creating fresh template environment...\n")
     return setupNewTemplateEnvironment(configDir)
 }
-

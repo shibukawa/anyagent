@@ -43,3 +43,4 @@ Use the standard EditorConfig format with:
 
 ## Output
 Create a complete `.editorconfig` file that will ensure consistent formatting across the development team and different editors/IDEs.
+

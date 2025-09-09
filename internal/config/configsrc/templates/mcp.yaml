@@ -18,3 +18,4 @@ servers:
       - "/path/to/git/repository"
 
   # Add more MCP servers as needed
+

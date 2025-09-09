@@ -9,12 +9,12 @@ import (
     "strings"
 )
 
-//go:embed templates/commands/*
+//go:embed configsrc/templates/commands/*
 var commandsFS embed.FS
 
 // GetCommandTemplate retrieves the template content for the specified command
 func GetCommandTemplate(command string) (string, error) {
-    fileName := fmt.Sprintf("templates/commands/%s.md", command)
+    fileName := fmt.Sprintf("configsrc/templates/commands/%s.md", command)
     content, err := commandsFS.ReadFile(fileName)
     if err != nil {
         return "", fmt.Errorf("command template not found: %s", command)
@@ -60,12 +60,12 @@ func GetCommandTemplateResolved(projectDir, command string) (string, error) {
 
 // GetAvailableCommands returns a list of available command templates
 func GetAvailableCommands() ([]string, error) {
-	var commands []string
+    var commands []string
 
-	entries, err := fs.ReadDir(commandsFS, "templates/commands")
-	if err != nil {
-		return nil, fmt.Errorf("failed to read commands directory: %w", err)
-	}
+    entries, err := fs.ReadDir(commandsFS, "configsrc/templates/commands")
+    if err != nil {
+        return nil, fmt.Errorf("failed to read commands directory: %w", err)
+    }
 
 	for _, entry := range entries {
 		if !entry.IsDir() && strings.HasSuffix(entry.Name(), ".md") {
