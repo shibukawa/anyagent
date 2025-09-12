@@ -6,7 +6,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
-	"strings"
 
 	"github.com/shibukawa/anyagent/internal/config"
 )
@@ -88,7 +87,6 @@ func ValidateTemplateEnvironment(configDir string) bool {
 		"templates/extra_rules/react.md",
 		"README.md",
 		"AGENTS.md",
-		".github",
 		".amazonq",
 		".claude",
 		".junie",
@@ -104,12 +102,11 @@ func ValidateTemplateEnvironment(configDir string) bool {
 
 	// Check for required symbolic links
 	requiredSymlinks := map[string]string{
-		".github/copilot-instructions.md": "../AGENTS.md",
-		".amazonq/rules/AGENTS.md":        "../../AGENTS.md",
-		".claude/AGENTS.md":               "../AGENTS.md",
-		".junie/AGENTS.md":                "../AGENTS.md",
-		".gemini/AGENTS.md":               "../AGENTS.md",
-		"CLAUDE.md":                       "AGENTS.md", // Project root CLAUDE.md
+		".amazonq/rules/AGENTS.md": "../../AGENTS.md",
+		".claude/AGENTS.md":        "../AGENTS.md",
+		".junie/AGENTS.md":         "../AGENTS.md",
+		".gemini/AGENTS.md":        "../AGENTS.md",
+		"CLAUDE.md":                "AGENTS.md", // Project root CLAUDE.md
 	}
 
 	for symlinkPath, expectedTarget := range requiredSymlinks {
@@ -239,35 +236,6 @@ func updateTemplateEnvironment(configDir string) error {
 }
 
 // printTemplateInfo prints helpful information about the template environment
-func printTemplateInfo(configDir string) {
-	separator := strings.Repeat("=", 60)
-	fmt.Printf("\n%s\n", separator)
-	fmt.Printf("🎉 Template Environment Ready!\n")
-	fmt.Printf("%s\n", separator)
-	fmt.Printf("Location: %s\n", configDir)
-	fmt.Printf("\n📁 Directory Structure:\n")
-	fmt.Printf("  ├── AGENTS.md                 # anyagent project configuration\n")
-	fmt.Printf("  ├── templates/\n")
-	fmt.Printf("  │   ├── AGENTS.md.tmpl        # Project template\n")
-	fmt.Printf("  │   ├── mcp.yaml              # MCP server definitions\n")
-	fmt.Printf("  │   └── commands/             # Instruction templates\n")
-	fmt.Printf("  │       ├── general.md\n")
-	fmt.Printf("  │       ├── coding.md\n")
-	fmt.Printf("  │       └── project-specific.md\n")
-	fmt.Printf("  └── Agent directories/        # Individual agent configs\n")
-	fmt.Printf("      ├── .github/\n")
-	fmt.Printf("      ├── .amazonq/\n")
-	fmt.Printf("      ├── .claude/\n")
-	fmt.Printf("      ├── .junie/\n")
-	fmt.Printf("      └── .gemini/\n")
-	fmt.Printf("\n💡 Next Steps:\n")
-	fmt.Printf("  1. Edit template files in VSCode\n")
-	fmt.Printf("  2. Customize agent configurations\n")
-	fmt.Printf("  3. Use 'anyagent sync' in your projects\n")
-	fmt.Printf("\n🔧 This directory is also an anyagent project!\n")
-	fmt.Printf("   You can use AI assistants to help edit these templates.\n")
-	fmt.Printf("%s\n", separator)
-}
 
 // performHardReset performs a complete reset of the template environment
 func performHardReset(configDir string) error {

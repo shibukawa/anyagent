@@ -82,7 +82,7 @@ anyagent add mcp <name> --cmd "<launcher and args>" [--global]
 ### GitHub Copilot
 - Rules: `.github/instructions/<language>.instructions.md`
 - Commands: `.github/prompts/<command>.prompt.md`
-- Integration: `.github/copilot-instructions.md` → `../AGENTS.md`
+- Integration: (symlink no longer required; Copilot now reads AGENTS.md directly)
 - Format: Markdown with YAML frontmatter
 - MCP: `.vscode/mcp.json` (JSON in project)
 

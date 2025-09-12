@@ -80,7 +80,7 @@ anyagent add mcp <name> --cmd "<launcher and args>" [--global]
 ### GitHub Copilot
 - **ルール配置**: `.github/instructions/<language>.instructions.md`
 - **コマンド配置**: `.github/prompts/<command-name>.prompt.md`
-- **統合設定**: `.github/copilot-instructions.md` → `../AGENTS.md`
+- **統合設定**: シンボリックリンク不要（Copilot が AGENTS.md を直接参照可能）
 - **ファイル形式**: YAMLフロントマター付きMarkdown
 - **MCP設定**: `.vscode/mcp.json`
 

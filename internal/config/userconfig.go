@@ -118,7 +118,6 @@ func CreateAnyagentProject(baseDir string) error {
 
 	// Create agent directories with symbolic links to AGENTS.md
 	agentConfigs := map[string]string{
-		".github":  "copilot-instructions.md",
 		".amazonq": "rules/AGENTS.md",
 		".claude":  "AGENTS.md",
 		".junie":   "AGENTS.md",
@@ -179,29 +178,9 @@ func GetAGENTSTemplate() string {
 	b, _ := templatesFS.ReadFile("configsrc/templates/AGENTS.md.tmpl")
 	return string(b)
 }
-func getMCPTemplate() string {
-	b, _ := templatesFS.ReadFile("configsrc/templates/mcp.yaml")
-	return string(b)
-}
-func getGeneralCommandsTemplate() string {
-	b, _ := templatesFS.ReadFile("configsrc/templates/commands/general.md")
-	return string(b)
-}
-func getCodingCommandsTemplate() string {
-	b, _ := templatesFS.ReadFile("configsrc/templates/commands/coding.md")
-	return string(b)
-}
-func getProjectSpecificCommandsTemplate() string {
-	b, _ := templatesFS.ReadFile("configsrc/templates/commands/project-specific.md")
-	return string(b)
-}
 
 func getAnyagentAGENTSContent() string {
 	b, _ := templatesFS.ReadFile("configsrc/anyagent-AGENTS.md")
-	return string(b)
-}
-func getReadmeTemplate() string {
-	b, _ := templatesFS.ReadFile("configsrc/README.md")
 	return string(b)
 }
 func getGoRulesTemplate() string {

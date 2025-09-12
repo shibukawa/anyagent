@@ -23,8 +23,8 @@ var SupportedAgents = []AIAgent{
 	{
 		Name:         "copilot",
 		DisplayName:  "GitHub Copilot",
-		ConfigPath:   ".github/copilot-instructions.md",
-		NeedsSymlink: true,
+		ConfigPath:   "",    // 以前は .github/copilot-instructions.md へのシンボリックリンクを生成していたが不要になった
+		NeedsSymlink: false, // Copilot は AGENTS.md を直接参照可能になった
 	},
 	{
 		Name:         "qdev",
@@ -625,8 +625,6 @@ func reinstallCommandsForAgent(agentName, projectDir string, commands []string, 
 				fmt.Printf("⚠️  Warning: Could not create Gemini command '%s': %v\n", c, err)
 			}
 		}
-	default:
-		return nil
 	case "codex":
 		// Warn-only for missing Codex global commands
 		homeDir, err := os.UserHomeDir()
@@ -640,6 +638,8 @@ func reinstallCommandsForAgent(agentName, projectDir string, commands []string, 
 				fmt.Printf("⚠️  Codex global command '%s' not installed. Enable with: anyagent add command %s --global\n", c, c)
 			}
 		}
+	default:
+		return nil
 	}
 	return nil
 }
@@ -809,74 +809,6 @@ func getProjectParameters(params *InitParams) error {
 	return nil
 }
 
-// getProjectParametersWithTemplate gets project parameters and scans template for dynamic parameters
-func getProjectParametersWithTemplate(params *InitParams) error {
-	reader := bufio.NewReader(os.Stdin)
-
-	// Get basic project parameters first
-	// Get project name
-	fmt.Printf("\nEnter project name: ")
-	projectName, err := reader.ReadString('\n')
-	if err != nil {
-		return fmt.Errorf("failed to read project name: %w", err)
-	}
-	params.ProjectName = strings.TrimSpace(projectName)
-
-	if params.ProjectName == "" {
-		return fmt.Errorf("project name is required")
-	}
-
-	// Get project description
-	fmt.Printf("Enter project description: ")
-	projectDesc, err := reader.ReadString('\n')
-	if err != nil {
-		return fmt.Errorf("failed to read project description: %w", err)
-	}
-	params.ProjectDescription = strings.TrimSpace(projectDesc)
-
-	if params.ProjectDescription == "" {
-		return fmt.Errorf("project description is required")
-	}
-
-	// Extract dynamic parameters from template
-	template := config.GetAGENTSTemplate()
-	templateParams := config.ExtractTemplateParameters(template)
-
-	// Initialize dynamic parameters map
-	params.DynamicParameters = make(map[string]string)
-
-	// Always include basic parameters
-	params.DynamicParameters["PROJECT_NAME"] = params.ProjectName
-	params.DynamicParameters["PROJECT_DESCRIPTION"] = params.ProjectDescription
-
-	// Get additional template parameters
-	if len(templateParams) > 2 { // More than just PROJECT_NAME and PROJECT_DESCRIPTION
-		fmt.Printf("\nThe template requires additional parameters:\n")
-
-		for _, paramName := range templateParams {
-			// Skip basic parameters we already have
-			if paramName == "PROJECT_NAME" || paramName == "PROJECT_DESCRIPTION" {
-				continue
-			}
-
-			fmt.Printf("Enter %s: ", paramName)
-			paramValue, err := reader.ReadString('\n')
-			if err != nil {
-				return fmt.Errorf("failed to read parameter %s: %w", paramName, err)
-			}
-
-			paramValue = strings.TrimSpace(paramValue)
-			if paramValue == "" {
-				fmt.Printf("Warning: %s is empty, will leave placeholder in template\n", paramName)
-			}
-
-			params.DynamicParameters[paramName] = paramValue
-		}
-	}
-
-	return nil
-}
-
 // createAgentsFile creates the AGENTS.md file with populated parameters
 func createAgentsFile(params *InitParams, dryRun bool) error {
 	// Get the template content
@@ -961,41 +893,5 @@ func createAgentSymlinks(params *InitParams, dryRun bool) error {
 		}
 	}
 
-	return nil
-}
-
-// saveProjectConfig saves the project configuration to .anyagent.yaml
-func saveProjectConfig(params *InitParams, dryRun bool) error {
-	// Prepare agent names
-	var agentNames []string
-	for _, a := range params.SelectedAgents {
-		agentNames = append(agentNames, a.Name)
-	}
-
-	// Create project configuration
-	projectConfig := &config.ProjectConfig{
-		ProjectName:        params.ProjectName,
-		ProjectDescription: params.ProjectDescription,
-		InstalledRules:     []string{},
-		EnabledAgents:      agentNames,
-		Parameters:         params.DynamicParameters,
-	}
-
-	if dryRun {
-		fmt.Printf("[DRY RUN] Would save project configuration to: %s\n", config.GetProjectConfigPath(params.ProjectDir))
-		fmt.Printf("[DRY RUN] Configuration content:\n")
-		fmt.Printf("  Project: %s\n", projectConfig.ProjectName)
-		fmt.Printf("  Description: %s\n", projectConfig.ProjectDescription)
-		fmt.Printf("  Installed Rules: %v\n", projectConfig.InstalledRules)
-		fmt.Printf("  Enabled Agents: %v\n", projectConfig.EnabledAgents)
-		return nil
-	}
-
-	fmt.Printf("💾 Saving project configuration...\n")
-	if err := config.SaveProjectConfig(params.ProjectDir, projectConfig); err != nil {
-		return fmt.Errorf("failed to save project configuration: %w", err)
-	}
-
-	fmt.Printf("✅ Project configuration saved to .anyagent.yaml\n")
 	return nil
 }

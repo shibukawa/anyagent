@@ -32,15 +32,11 @@ func TestRunFirstSync(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Create a temporary directory for testing
-			tempDir, err := os.MkdirTemp("", "test_init_*")
-			if err != nil {
-				t.Fatalf("Failed to create temp directory: %v", err)
-			}
-			defer os.RemoveAll(tempDir)
+			// Create a temporary directory for testing (auto-clean)
+			tempDir := t.TempDir()
 
 			// Run first sync with dry-run and predefined parameters to avoid interactive prompts
-			err = RunFirstSyncWithParams(tempDir, tt.agentNames, "test-project", "Test project description", true)
+			err := RunFirstSyncWithParams(tempDir, tt.agentNames, "test-project", "Test project description", true)
 
 			if tt.expectError && err == nil {
 				t.Errorf("Expected error but got none")
@@ -103,12 +99,9 @@ func TestValidateAgentNames(t *testing.T) {
 }
 
 func TestCreateAgentsFile(t *testing.T) {
-	// Create a temporary directory for testing
-	tempDir, err := os.MkdirTemp("", "test_agents_file_*")
-	if err != nil {
-		t.Fatalf("Failed to create temp directory: %v", err)
-	}
-	defer os.RemoveAll(tempDir)
+	// Create a temporary directory for testing (auto-clean)
+	tempDir := t.TempDir()
+	var err error
 
 	params := &InitParams{
 		ProjectName:        "test-project",
@@ -160,12 +153,9 @@ func TestCreateAgentsFile(t *testing.T) {
 }
 
 func TestCreateAgentSymlinks(t *testing.T) {
-	// Create a temporary directory for testing
-	tempDir, err := os.MkdirTemp("", "test_symlinks_*")
-	if err != nil {
-		t.Fatalf("Failed to create temp directory: %v", err)
-	}
-	defer os.RemoveAll(tempDir)
+	// Create a temporary directory for testing (auto-clean)
+	tempDir := t.TempDir()
+	var err error
 
 	// Create AGENTS.md file first
 	agentsPath := filepath.Join(tempDir, "AGENTS.md")
@@ -188,8 +178,8 @@ func TestCreateAgentSymlinks(t *testing.T) {
 			{
 				Name:         "copilot",
 				DisplayName:  "GitHub Copilot",
-				ConfigPath:   ".github/copilot-instructions.md",
-				NeedsSymlink: true,
+				ConfigPath:   "", // シンボリックリンク不要
+				NeedsSymlink: false,
 			},
 		},
 	}
@@ -200,26 +190,15 @@ func TestCreateAgentSymlinks(t *testing.T) {
 		t.Errorf("Dry run failed: %v", err)
 	}
 
-	// Test actual creation
+	// Test actual creation (no-op for Copilot now)
 	err = createAgentSymlinks(params, false)
 	if err != nil {
-		t.Errorf("Symlink creation failed: %v", err)
+		t.Errorf("createAgentSymlinks should not fail when symlink not needed: %v", err)
 	}
 
-	// Verify symlink was created
+	// Ensure that old symlink is not created (backward compatibility: if existing project still has it, that's fine, but new生成しない)
 	symlinkPath := filepath.Join(tempDir, ".github", "copilot-instructions.md")
-	if _, err := os.Lstat(symlinkPath); os.IsNotExist(err) {
-		t.Errorf("Symlink was not created")
-	}
-
-	// Verify it's actually a symlink
-	linkTarget, err := os.Readlink(symlinkPath)
-	if err != nil {
-		t.Errorf("Failed to read symlink: %v", err)
-	}
-
-	expectedTarget := "../AGENTS.md"
-	if linkTarget != expectedTarget {
-		t.Errorf("Expected symlink target %s, got %s", expectedTarget, linkTarget)
+	if _, err := os.Lstat(symlinkPath); err == nil {
+		t.Errorf("copilot-instructions.md symlink should no longer be created")
 	}
 }
