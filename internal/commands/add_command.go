@@ -361,9 +361,7 @@ func buildGeminiCommandTOML(templateContent string) string {
 		descEsc = ""
 	}
 	// Use TOML multiline basic string for prompt
-	// Trim leading newline to keep formatting tidy
-	if strings.HasPrefix(prompt, "\n") {
-		prompt = prompt[1:]
-	}
+	// Trim leading newline to keep formatting tidy (simplified with TrimPrefix)
+	prompt = strings.TrimPrefix(prompt, "\n")
 	return fmt.Sprintf("description = \"%s\"\nprompt = \"\"\"%s\"\"\"\n", descEsc, prompt)
 }

@@ -201,7 +201,6 @@ func TestCreateAnyagentProject(t *testing.T) {
 
 				// Verify agent directories were created
 				expectedDirs := []string{
-					".github",
 					".amazonq",
 					".claude",
 					".junie",

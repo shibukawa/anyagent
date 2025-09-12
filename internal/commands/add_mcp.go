@@ -360,9 +360,7 @@ func upsertTomlSection(content, sectionName, sectionBody string) string {
 			// Replace with new section body
 			// Move forward to next header
 			// First, append sectionBody (without trailing newline split)
-			for _, sb := range strings.Split(strings.TrimRight(sectionBody, "\n"), "\n") {
-				out = append(out, sb)
-			}
+			out = append(out, strings.Split(strings.TrimRight(sectionBody, "\n"), "\n")...)
 			replaced = true
 			i++
 			for i < len(lines) {
@@ -380,9 +378,7 @@ func upsertTomlSection(content, sectionName, sectionBody string) string {
 		if len(out) > 0 && strings.TrimSpace(out[len(out)-1]) != "" {
 			out = append(out, "")
 		}
-		for _, sb := range strings.Split(strings.TrimRight(sectionBody, "\n"), "\n") {
-			out = append(out, sb)
-		}
+		out = append(out, strings.Split(strings.TrimRight(sectionBody, "\n"), "\n")...)
 		out = append(out, "")
 	}
 	return strings.Join(out, "\n")

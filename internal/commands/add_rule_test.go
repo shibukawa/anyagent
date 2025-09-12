@@ -61,18 +61,14 @@ func TestRunAddRule(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Create temporary directory
-			tempDir, err := os.MkdirTemp("", "test_add_rule")
-			if err != nil {
-				t.Fatalf("Failed to create temp dir: %v", err)
-			}
-			defer os.RemoveAll(tempDir)
+			// Create temporary directory (automatically cleaned)
+			tempDir := t.TempDir()
+			var err error
 
 			// Create AGENTS.md if required
 			if tt.createAGENTS {
 				agentsPath := filepath.Join(tempDir, "AGENTS.md")
-				err = os.WriteFile(agentsPath, []byte("# AI Agents Configuration\ntest content"), 0644)
-				if err != nil {
+				if err = os.WriteFile(agentsPath, []byte("# AI Agents Configuration\ntest content"), 0644); err != nil {
 					t.Fatalf("Failed to create AGENTS.md: %v", err)
 				}
 			}
@@ -223,11 +219,8 @@ func TestValidateAndNormalizeLanguage(t *testing.T) {
 }
 
 func TestCreateInstructionsDirectory(t *testing.T) {
-	tempDir, err := os.MkdirTemp("", "test_instructions_dir")
-	if err != nil {
-		t.Fatalf("Failed to create temp dir: %v", err)
-	}
-	defer os.RemoveAll(tempDir)
+	tempDir := t.TempDir()
+	var err error
 
 	instructionsDir := filepath.Join(tempDir, ".github", "instructions")
 
@@ -255,11 +248,8 @@ func TestCreateInstructionsDirectory(t *testing.T) {
 }
 
 func TestCreateRuleFile(t *testing.T) {
-	tempDir, err := os.MkdirTemp("", "test_rule_file")
-	if err != nil {
-		t.Fatalf("Failed to create temp dir: %v", err)
-	}
-	defer os.RemoveAll(tempDir)
+	tempDir := t.TempDir()
+	var err error
 
 	// Create the directory first
 	instructionsDir := filepath.Join(tempDir, ".github", "instructions")
